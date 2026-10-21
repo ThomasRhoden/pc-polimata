@@ -1,0 +1,54 @@
+import json
+
+import pytest
+
+from pc_polimata import i18n
+from pc_polimata.core import settings as st
+from pc_polimata.core.units import format_temp
+
+
+def test_format_temp():
+    assert format_temp(None) == "n/d"
+    assert format_temp(50) == "50 °C"
+    assert format_temp(100, "F") == "212 °F"
+    with pytest.raises(ValueError):
+        format_temp(1, "K")
+
+
+def test_settings_roundtrip(tmp_path):
+    s = st.Settings(language="en", temperature_unit="F", refresh_ms=500)
+    st.save_settings(s, tmp_path)
+    assert st.load_settings(tmp_path) == s
+
+
+def test_settings_defaults_on_missing_or_corrupt(tmp_path):
+    assert st.load_settings(tmp_path) == st.Settings()
+    (tmp_path / "settings.json").write_text("{not json")
+    assert st.load_settings(tmp_path) == st.Settings()
+
+
+def test_settings_ignores_unknown_and_rejects_invalid(tmp_path):
+    (tmp_path / "settings.json").write_text(json.dumps({"language": "en", "api_key": "x"}))
+    assert st.load_settings(tmp_path).language == "en"
+    (tmp_path / "settings.json").write_text(json.dumps({"refresh_ms": 1}))
+    assert st.load_settings(tmp_path) == st.Settings()
+    with pytest.raises(ValueError):
+        st.save_settings(st.Settings(language="fr"), tmp_path)
+
+
+def test_config_dir_respects_xdg(monkeypatch, tmp_path):
+    monkeypatch.setattr(st.sys, "platform", "linux")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    assert st.config_dir() == tmp_path / "pc-polimata"
+
+
+def test_tr_switches_language():
+    try:
+        assert i18n.tr("Rede") == "Rede"
+        i18n.set_language("en")
+        assert i18n.tr("Rede") == "Network"
+        assert i18n.tr("texto sem tradução") == "texto sem tradução"
+    finally:
+        i18n.set_language("pt")
+    with pytest.raises(ValueError):
+        i18n.set_language("xx")

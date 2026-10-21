@@ -24,7 +24,7 @@ pc-polimata = "pc_polimata.cli:main"
 include = ["pc_polimata*"]
 
 [tool.ruff]
-line-length = 110
+line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
@@ -33,3 +33,6 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff.lint.per-file-ignores]
+"pc_polimata/i18n.py" = ["E501"]
