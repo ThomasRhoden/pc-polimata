@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import time
 from dataclasses import asdict, dataclass, field
 
@@ -30,7 +31,11 @@ class SensorSnapshot:
 
 
 def read_cpu_temperature() -> float | None:
-    """Temperatura da CPU em °C, ou None se o SO não expõe (ex.: Windows sem WMI/driver)."""
+    """Temperatura da CPU em °C, ou None se o SO não expõe (Windows: requer LibreHardwareMonitor)."""
+    if sys.platform.startswith("win"):
+        from pc_polimata.core.windows_temps import read_windows_temps
+
+        return read_windows_temps().cpu_c
     reader = getattr(psutil, "sensors_temperatures", None)
     if reader is None:
         return None
