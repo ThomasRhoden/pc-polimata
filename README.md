@@ -1,7 +1,5 @@
 # PC Polimata
 
-![CI](https://github.com/ThomasRhoden/pc-polimata/actions/workflows/ci.yml/badge.svg)
-
 Aplicativo desktop de **diagnóstico e benchmark de hardware**, escrito do zero em Python.
 Inspirado na proposta de ferramentas como AIDA64, CPU-Z, GPU-Z e Cinebench — **nenhum código
 dessas ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são próprios.
