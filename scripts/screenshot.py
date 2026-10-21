@@ -1,4 +1,4 @@
-"""Gera screenshots da GUI em docs/ (Linux: `xvfb-run -s "-screen 0 1040x680x24" python scripts/screenshot.py`).
+"""Gera screenshots da GUI em docs/ (Linux: `xvfb-run -s "-screen 0 1180x720x24" python scripts/screenshot.py`).
 
 Uso: python scripts/screenshot.py [Aba=segundos ...]   ex.: Sistema=2 Sensores=20
 """
@@ -17,7 +17,7 @@ from pc_polimata.gui.app import PolimataApp  # noqa: E402
 from pc_polimata.i18n import tr  # noqa: E402
 
 DEFAULT = ["Sistema=2", "Sensores=20", "Rede=2"]
-W, H = 1040, 680
+W, H = 1180, 720
 
 
 def main(specs: list[str]) -> None:

@@ -18,6 +18,7 @@ class SensorsTab:
 
     def __init__(self, master: ctk.CTkFrame, app) -> None:
         self.app = app
+        self.last = None
         self.monitor = SensorMonitor()
         self.history = RollingSeries(["cpu", "ram", "gpu"], maxlen=60)
         self.bars: dict[str, tuple[ctk.CTkProgressBar, ctk.CTkLabel]] = {}
@@ -39,7 +40,7 @@ class SensorsTab:
         master.after(300, self.refresh)
 
     def refresh(self) -> None:
-        snap = self.monitor.read()
+        snap = self.last = self.monitor.read()
         self.history.append(cpu=snap.cpu_percent, ram=snap.ram_percent, gpu=snap.gpu_percent)
         for key, pct in (("cpu", snap.cpu_percent), ("ram", snap.ram_percent), ("gpu", snap.gpu_percent)):
             bar, val = self.bars[key]
