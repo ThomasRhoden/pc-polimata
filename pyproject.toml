@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pc-polimata"
-version = "0.1.0"
+version = "0.2.0"
 description = "Diagnóstico e benchmark de hardware para desktop, em Python"
 readme = "README.md"
 license = { text = "MIT" }
@@ -14,11 +14,17 @@ dependencies = ["psutil>=5.9", "py-cpuinfo>=9.0", "customtkinter>=5.2"]
 
 [project.optional-dependencies]
 gpu = ["nvidia-ml-py>=12.0"]
+memory = ["numpy>=1.24"]
 windows = ["wmi>=1.5; sys_platform == 'win32'"]
 dev = ["pytest>=8", "ruff>=0.5"]
 
 [project.scripts]
 pc-polimata = "pc_polimata.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ThomasRhoden/pc-polimata"
+Issues = "https://github.com/ThomasRhoden/pc-polimata/issues"
+Changelog = "https://github.com/ThomasRhoden/pc-polimata/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["pc_polimata*"]
