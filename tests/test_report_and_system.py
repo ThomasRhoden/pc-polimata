@@ -31,3 +31,21 @@ def test_cli_report_json(tmp_path):
     out = tmp_path / "r.json"
     assert main(["--report", "-o", str(out)]) == 0
     assert "system" in json.loads(out.read_text(encoding="utf-8"))
+
+
+def test_cli_full_headless(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    for var in ("PC_POLIMATA_API_KEY", "OPENAI_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    out = tmp_path / "r.json"
+    argv = ["--benchmark", "--duration", "0.2", "--memory", "--games", "--smart", "--diagnose", "-o", str(out)]
+    assert main(argv) == 0
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert {"cpu_benchmark", "memory_benchmark", "games_estimate", "diagnosis", "disk_health"} <= set(data)
+    from pc_polimata.core.history import HistoryStore
+
+    assert {r.kind for r in HistoryStore(tmp_path / "pc-polimata" / "history.sqlite3").list_runs()} == {
+        "cpu",
+        "disk",
+        "memory",
+    }
