@@ -3,6 +3,28 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/);
 versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+## [0.2.0] - 2026-10-21
+
+### Adicionado
+- Aba **Histórico**: cada benchmark (CPU, disco, memória) é salvo em SQLite; comparação entre a última execução e a anterior e gráfico da evolução (#1).
+- Aba **Diagnóstico IA**: regras offline (temperatura, RAM, disco cheio, SMART, gargalo, latência) com nota de saúde 0–100 e análise opcional por LLM via API compatível com OpenAI; o hostname é removido antes do envio (#2).
+- **Benchmark de memória**: largura de banda (cópia de buffer) e latência (pointer chasing), com numpy quando disponível e fallback em Python puro (#3).
+- **Saúde dos discos (SMART)** via `smartctl -j`, na aba Sistema e na CLI (#4).
+- Aba **Jogos**: estimativa do preset provável em 19 jogos a partir de uma tabela local de tiers de CPU/GPU, com seleção manual de CPU/GPU, claramente rotulada como estimativa (#5).
+- Aba **Configurações**: idioma PT/EN, acento do tema, unidade de temperatura, intervalo de atualização, endpoint/modelo do LLM e chave de API (#6).
+- Empacotamento: spec do PyInstaller, `docs/BUILD.md` e instalação via `pipx` (comando `pc-polimata`) (#7).
+- `docs/ARCHITECTURE.md` com diagramas mermaid e `CONTRIBUTING.md` (#8).
+- CLI: `--memory`, `--smart`, `--games`, `--diagnose [--llm]`, `--no-history`, `--version`.
+
+### Alterado
+- O pool do benchmark de CPU usa o método `spawn` em todas as plataformas (evita deadlock de `fork` com threads da GUI).
+- Gráficos aceitam eixo ajustável e legenda com espaçamento automático.
+
+### Segurança
+- A chave de API nunca vai para o `settings.json` nem para relatórios: vem de `PC_POLIMATA_API_KEY`/`OPENAI_API_KEY` ou de um arquivo `api_key` com permissão 0600 no diretório de configuração do usuário.
+
 ## [0.1.0] - 2026-10-21
 
 Primeira versão pública.
@@ -19,3 +41,7 @@ Primeira versão pública.
 - Configurações persistidas (idioma, acento, unidade de temperatura, intervalo) e i18n PT/EN no núcleo.
 - CLI headless `python -m pc_polimata --report [--benchmark] [-o arquivo.json|.html]`.
 - Exportação JSON/HTML, testes pytest, ruff, licença MIT.
+
+[Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/ThomasRhoden/pc-polimata/releases/tag/v0.1.0
