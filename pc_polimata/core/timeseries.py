@@ -30,14 +30,19 @@ class RollingSeries:
 
 
 def to_points(
-    values: list[float | None], width: float, height: float, maxlen: int, vmax: float = 100.0
+    values: list[float | None],
+    width: float,
+    height: float,
+    maxlen: int,
+    vmax: float = 100.0,
+    vmin: float = 0.0,
 ) -> list[list[tuple[float, float]]]:
     """Converte valores em segmentos de coordenadas de tela (None quebra a linha).
 
     Valores mais recentes ficam à direita; y=0 é o topo do canvas.
     """
-    if vmax <= 0:
-        raise ValueError("vmax must be positive")
+    if vmax <= vmin:
+        raise ValueError("vmax must be greater than vmin")
     step = width / (maxlen - 1)
     offset = maxlen - len(values)
     segments: list[list[tuple[float, float]]] = [[]]
@@ -46,6 +51,6 @@ def to_points(
             if segments[-1]:
                 segments.append([])
             continue
-        clamped = min(max(v, 0.0), vmax)
-        segments[-1].append(((offset + i) * step, height - clamped / vmax * height))
+        clamped = min(max(v, vmin), vmax)
+        segments[-1].append(((offset + i) * step, height - (clamped - vmin) / (vmax - vmin) * height))
     return [s for s in segments if s]

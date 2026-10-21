@@ -18,6 +18,15 @@ class GamesTab:
         ).pack(anchor="w", padx=8, pady=(8, 0))
         bar = ctk.CTkFrame(master, fg_color="transparent")
         bar.pack(fill="x", padx=8, pady=8)
+        ctk.CTkLabel(bar, text="CPU:").pack(side="left")
+        self.cpu = ctk.CTkOptionMenu(
+            bar,
+            values=[AUTO, *games.known_cpus()],
+            command=lambda _v: self.refresh(),
+            fg_color=t.GREEN,
+            button_color=t.GREEN_HOVER,
+        )
+        self.cpu.pack(side="left", padx=(6, 16))
         ctk.CTkLabel(bar, text="GPU:").pack(side="left")
         self.gpu = ctk.CTkOptionMenu(
             bar,
@@ -31,8 +40,12 @@ class GamesTab:
         self.refresh()
 
     def refresh(self) -> None:
-        choice = self.gpu.get()
-        est = games.estimate_for_system(self.app.system, gpu_override=None if choice == AUTO else choice)
+        gpu, cpu = self.gpu.get(), self.cpu.get()
+        est = games.estimate_for_system(
+            self.app.system,
+            gpu_override=None if gpu == AUTO else gpu,
+            cpu_override=None if cpu == AUTO else cpu,
+        )
         self.app.record("games_estimate", est)
         lines = [
             f"CPU: {fmt(est['cpu'])}  (tier {fmt(est['cpu_tier'])}/10)",
@@ -41,7 +54,7 @@ class GamesTab:
             f"{'Jogo':<26} {'Preset provável (1080p ~60 FPS)':<32} Limitado por",
             "-" * 74,
         ]
-        lines += [f"{g['game']:<26} {g['preset']:<32} {fmt(g['limited_by'])}" for g in est["games"]]
+        lines += [f"{g['game']:<26} {g['preset']:<32} {g['limited_by'] or '—'}" for g in est["games"]]
         if est["gpu_tier"] is None or est["cpu_tier"] is None:
-            lines += ["", "CPU ou GPU fora da tabela: escolha uma GPU equivalente no menu acima."]
+            lines += ["", "CPU ou GPU fora da tabela: escolha um modelo equivalente nos menus acima."]
         set_text(self.box, "\n".join(lines))

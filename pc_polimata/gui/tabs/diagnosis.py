@@ -63,6 +63,3 @@ class DiagnosisTab:
         if res.llm_analysis:
             lines += ["", "— Análise do LLM —", res.llm_analysis]
         set_text(self.box, "\n".join(lines))
-
-    def screenshot_prepare(self) -> None:
-        self.run()

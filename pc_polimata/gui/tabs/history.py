@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 import customtkinter as ctk
 
 from pc_polimata.core.history import PRIMARY_METRICS, compare, series
@@ -9,6 +11,10 @@ from pc_polimata.gui.widgets import LineChart, button, fmt, set_text, textbox
 from pc_polimata.i18n import tr
 
 KIND_LABELS = {"cpu": "CPU", "disk": "Disco", "memory": "Memória"}
+
+
+def _local(iso: str) -> str:
+    return datetime.fromisoformat(iso).astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
 
 class HistoryTab:
@@ -60,8 +66,11 @@ class HistoryTab:
         for i in range(len(runs)):
             rolling.append(**{m: (values[m][i] / peaks[m] * 100 if values[m][i] else None) for m in metrics})
         self.chart.series = rolling
+        self.chart.labels = {m: m.replace("_", " ") for m in metrics}
+        known = [v for m in metrics for v in rolling.values(m) if v is not None]
+        self.chart.vmin = max(0.0, (min(known) // 5) * 5 - 5) if known else 0.0
         self.chart.redraw()
-        self.chart_label.configure(text=f"{' / '.join(metrics)} — % do melhor resultado, mais antigo → recente")
+        self.chart_label.configure(text="% do melhor resultado de cada métrica (eixo ajustado), mais antigo → recente")
 
         lines = []
         if len(runs) >= 2:
@@ -71,12 +80,9 @@ class HistoryTab:
                 arrow = "" if change is None else ("▲" if change > 0 else "▼" if change < 0 else "=")
                 lines.append(f"  {metric:<20} {fmt(d['old']):>10} → {fmt(d['new']):>10}  {arrow} {fmt(change, '%')}")
             lines.append("")
-        lines.append(f"{'#':>4}  {'data (UTC)':<20} " + "  ".join(f"{m:>18}" for m in metrics))
+        lines.append(f"{'#':>4}  {'data (local)':<20} " + "  ".join(f"{m:>18}" for m in metrics))
         for r in runs:
             lines.append(
-                f"{r.id:>4}  {r.created_at[:19]:<20} " + "  ".join(f"{fmt(r.metrics.get(m)):>18}" for m in metrics)
+                f"{r.id:>4}  {_local(r.created_at):<20} " + "  ".join(f"{fmt(r.metrics.get(m)):>18}" for m in metrics)
             )
         set_text(self.box, "\n".join(lines))
-
-    def screenshot_prepare(self) -> None:
-        self.refresh()

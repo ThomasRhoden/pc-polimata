@@ -25,3 +25,10 @@ def test_to_points_right_aligned_and_clamped():
 def test_to_points_breaks_on_none():
     segs = to_points([10, None, 20, 30], width=30, height=100, maxlen=4)
     assert len(segs) == 2 and len(segs[1]) == 2
+
+
+def test_to_points_with_vmin():
+    [seg] = to_points([90, 100], width=10, height=100, maxlen=2, vmin=80)
+    assert seg == [(0.0, 50.0), (10.0, 0.0)]
+    with pytest.raises(ValueError):
+        to_points([1], 10, 10, 2, vmax=5, vmin=5)

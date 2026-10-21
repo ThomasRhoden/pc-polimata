@@ -53,20 +53,33 @@ class LineChart(tk.Canvas):
 
     COLORS = (t.GREEN_LIGHT, t.BROWN_LIGHT, t.SKY)
 
-    def __init__(self, master, series: RollingSeries, height: int = 160, vmax: float = 100.0) -> None:
+    def __init__(
+        self,
+        master,
+        series: RollingSeries,
+        height: int = 160,
+        vmax: float = 100.0,
+        vmin: float = 0.0,
+        labels: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(master, height=height, bg=t.BG, highlightthickness=0)
-        self.series, self.vmax = series, vmax
+        self.series, self.vmax, self.vmin = series, vmax, vmin
+        self.labels = labels or {}
         self.bind("<Configure>", lambda _e: self.redraw())
 
     def redraw(self) -> None:
         self.delete("all")
         w, h = max(self.winfo_width(), 2), max(self.winfo_height(), 2)
+        top = 22  # espaço da legenda
         for frac in (0.25, 0.5, 0.75):
-            y = h * frac
+            y = top + (h - top) * frac
             self.create_line(0, y, w, y, fill=t.GRID, dash=(2, 4))
+        legend_x = 8
         for i, name in enumerate(self.series.names):
             color = self.COLORS[i % len(self.COLORS)]
-            for seg in to_points(self.series.values(name), w, h - 2, self.series.maxlen, self.vmax):
+            for seg in to_points(self.series.values(name), w, h - top - 2, self.series.maxlen, self.vmax, self.vmin):
                 if len(seg) > 1:
-                    self.create_line(*[c for p in seg for c in p], fill=color, width=2)
-            self.create_text(8 + i * 70, 10, text=f"■ {name.upper()}", fill=color, anchor="w", font=(t.FONT[0], 10))
+                    self.create_line(*[c for x, y in seg for c in (x, y + top)], fill=color, width=2)
+            label = f"■ {self.labels.get(name, name.upper())}"
+            item = self.create_text(legend_x, 10, text=label, fill=color, anchor="w", font=(t.FONT[0], 10))
+            legend_x = self.bbox(item)[2] + 16

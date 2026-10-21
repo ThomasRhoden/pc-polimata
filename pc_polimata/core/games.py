@@ -100,3 +100,8 @@ def estimate_for_system(system: dict, gpu_override: str | None = None, cpu_overr
 def known_gpus() -> list[str]:
     data = load_tiers()
     return [name for tier in sorted(data["gpu_tiers"], key=int, reverse=True) for name in data["gpu_tiers"][tier]]
+
+
+def known_cpus() -> list[str]:
+    data = load_tiers()
+    return [name for tier in sorted(data["cpu_tiers"], key=int, reverse=True) for name in data["cpu_tiers"][tier]]
