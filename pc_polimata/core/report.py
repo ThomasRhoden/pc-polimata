@@ -27,9 +27,7 @@ def to_json(report: dict[str, Any]) -> str:
 
 def _render(value: Any) -> str:
     if isinstance(value, dict):
-        rows = "".join(
-            f"<tr><th>{html.escape(str(k))}</th><td>{_render(v)}</td></tr>" for k, v in value.items()
-        )
+        rows = "".join(f"<tr><th>{html.escape(str(k))}</th><td>{_render(v)}</td></tr>" for k, v in value.items())
         return f"<table>{rows}</table>"
     if isinstance(value, list):
         if not value:
@@ -51,9 +49,7 @@ td{padding:2px 0}ul{margin:0;padding-left:1rem}
 
 def to_html(report: dict[str, Any]) -> str:
     sections = "".join(
-        f"<h2>{html.escape(k)}</h2>{_render(v)}"
-        for k, v in report.items()
-        if k not in {"generator", "generated_at"}
+        f"<h2>{html.escape(k)}</h2>{_render(v)}" for k, v in report.items() if k not in {"generator", "generated_at"}
     )
     return (
         "<!DOCTYPE html><html lang='pt-BR'><head><meta charset='utf-8'>"

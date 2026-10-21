@@ -76,10 +76,7 @@ class StressTest:
     def run(self, on_sample: Callable[[dict], None] | None = None) -> StressResult:
         import psutil
 
-        workers = [
-            self._ctx.Process(target=_burn, args=(self._stop,), daemon=True)
-            for _ in range(self.config.workers)
-        ]
+        workers = [self._ctx.Process(target=_burn, args=(self._stop,), daemon=True) for _ in range(self.config.workers)]
         for w in workers:
             w.start()
         start = time.monotonic()

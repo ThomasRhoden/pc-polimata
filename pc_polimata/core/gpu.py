@@ -151,9 +151,7 @@ def parse_rocm_smi(output: str) -> list[GPUStatus]:
                 load_percent=_num(card, "GPU use (%)"),
                 memory_total_mb=total / 2**20 if total else None,
                 memory_used_mb=used / 2**20 if used else None,
-                temperature_c=_num(
-                    card, "Temperature (Sensor edge) (C)", "Temperature (Sensor junction) (C)"
-                ),
+                temperature_c=_num(card, "Temperature (Sensor edge) (C)", "Temperature (Sensor junction) (C)"),
                 source="rocm-smi",
             )
         )
