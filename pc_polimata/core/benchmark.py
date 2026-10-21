@@ -86,7 +86,8 @@ def run_cpu_benchmark(duration: float = 5.0, processes: int | None = None) -> CP
     processes = processes or os.cpu_count() or 1
     start = time.perf_counter()
     single = compute_score(_iterations_in(duration), duration)
-    with mp.Pool(processes) as pool:
+    # "spawn" em todas as plataformas: seguro com threads da GUI e igual ao Windows
+    with mp.get_context("spawn").Pool(processes) as pool:
         results = pool.map(_iterations_in, [duration] * processes)
     multi = compute_score(sum(results), duration)
     return CPUBenchmarkResult(single, multi, processes, round(time.perf_counter() - start, 2))
