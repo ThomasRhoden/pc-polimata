@@ -1,0 +1,250 @@
+{
+  "_comment": "Tiers aproximados (1 = entrada, 10 = topo de linha) para ESTIMATIVA. Requisitos = tier para ~60 FPS em 1080p no preset médio. Valores curados manualmente; não são medições.",
+  "version": 1,
+  "gpu_tiers": {
+    "10": [
+      "RTX 5090",
+      "RTX 5080",
+      "RTX 4090",
+      "RX 7900 XTX"
+    ],
+    "9": [
+      "RTX 4080",
+      "RTX 5070 Ti",
+      "RX 7900 XT",
+      "RX 9070 XT"
+    ],
+    "8": [
+      "RTX 4070 Ti",
+      "RTX 5070",
+      "RTX 3090",
+      "RX 7800 XT",
+      "RX 9070",
+      "RX 6950 XT"
+    ],
+    "7": [
+      "RTX 4070",
+      "RTX 3080",
+      "RX 6800 XT",
+      "RX 7700 XT",
+      "RX 6800"
+    ],
+    "6": [
+      "RTX 3070",
+      "RTX 4060 Ti",
+      "RX 6700 XT",
+      "RTX 2080 Ti",
+      "Arc B580"
+    ],
+    "5": [
+      "RTX 3060 Ti",
+      "RTX 4060",
+      "RX 7600",
+      "RX 6650 XT",
+      "RTX 2080",
+      "Arc A770"
+    ],
+    "4": [
+      "RTX 3060",
+      "RTX 2070",
+      "RTX 2060",
+      "RX 6600",
+      "Arc A750",
+      "RX 5700 XT"
+    ],
+    "3": [
+      "GTX 1660",
+      "GTX 1070",
+      "GTX 1650 Super",
+      "RX 5500 XT",
+      "RX 580",
+      "RTX 3050"
+    ],
+    "2": [
+      "GTX 1650",
+      "GTX 1060",
+      "RX 570",
+      "GTX 970",
+      "Radeon 780M"
+    ],
+    "1": [
+      "GT 1030",
+      "Intel UHD",
+      "Iris Xe",
+      "Vega 8",
+      "Radeon Graphics",
+      "Intel HD"
+    ]
+  },
+  "cpu_tiers": {
+    "10": [
+      "Ryzen 7 9800X3D",
+      "Ryzen 9 9950X",
+      "Core i9 14900K",
+      "Ryzen 7 7800X3D",
+      "Core Ultra 9 285K"
+    ],
+    "9": [
+      "Ryzen 9 7950X",
+      "Core i9 13900K",
+      "Ryzen 7 9700X",
+      "Core i7 14700K",
+      "Ryzen 9 7900X",
+      "Core Ultra 7 265K"
+    ],
+    "8": [
+      "Ryzen 7 7700X",
+      "Core i7 13700K",
+      "Ryzen 5 7600X",
+      "Core i5 14600K",
+      "Ryzen 7 5800X3D",
+      "Ryzen 5 9600X"
+    ],
+    "7": [
+      "Core i5 13600K",
+      "Ryzen 5 7600",
+      "Ryzen 9 5900X",
+      "Core i7 12700K",
+      "Core i5 13400",
+      "Core i5 12600K"
+    ],
+    "6": [
+      "Ryzen 7 5800X",
+      "Ryzen 5 5600X",
+      "Ryzen 5 5600",
+      "Core i5 12400",
+      "Core i7 11700K",
+      "Ryzen 7 5700X"
+    ],
+    "5": [
+      "Ryzen 5 3600",
+      "Core i5 10400",
+      "Core i7 9700K",
+      "Ryzen 7 3700X",
+      "Core i5 11400",
+      "Ryzen 5 5500"
+    ],
+    "4": [
+      "Ryzen 5 2600",
+      "Core i7 8700K",
+      "Core i5 9400F",
+      "Ryzen 5 1600",
+      "Core i5 10400F"
+    ],
+    "3": [
+      "Core i5 8400",
+      "Core i7 7700K",
+      "Ryzen 3 3100",
+      "Core i3 10100",
+      "Core i3 12100"
+    ],
+    "2": [
+      "Core i5 7400",
+      "Core i5 6500",
+      "Ryzen 3 1200",
+      "Core i7 4790"
+    ],
+    "1": [
+      "Celeron",
+      "Pentium",
+      "Athlon"
+    ]
+  },
+  "games": [
+    {
+      "name": "Counter-Strike 2",
+      "cpu_tier": 4,
+      "gpu_tier": 2
+    },
+    {
+      "name": "Valorant",
+      "cpu_tier": 3,
+      "gpu_tier": 1
+    },
+    {
+      "name": "League of Legends",
+      "cpu_tier": 2,
+      "gpu_tier": 1
+    },
+    {
+      "name": "Dota 2",
+      "cpu_tier": 3,
+      "gpu_tier": 1
+    },
+    {
+      "name": "Minecraft",
+      "cpu_tier": 3,
+      "gpu_tier": 1
+    },
+    {
+      "name": "Fortnite",
+      "cpu_tier": 4,
+      "gpu_tier": 3
+    },
+    {
+      "name": "Apex Legends",
+      "cpu_tier": 4,
+      "gpu_tier": 3
+    },
+    {
+      "name": "GTA V",
+      "cpu_tier": 3,
+      "gpu_tier": 2
+    },
+    {
+      "name": "EA Sports FC 25",
+      "cpu_tier": 4,
+      "gpu_tier": 3
+    },
+    {
+      "name": "Forza Horizon 5",
+      "cpu_tier": 4,
+      "gpu_tier": 4
+    },
+    {
+      "name": "Elden Ring",
+      "cpu_tier": 5,
+      "gpu_tier": 4
+    },
+    {
+      "name": "Call of Duty: Warzone",
+      "cpu_tier": 5,
+      "gpu_tier": 4
+    },
+    {
+      "name": "Red Dead Redemption 2",
+      "cpu_tier": 5,
+      "gpu_tier": 5
+    },
+    {
+      "name": "Baldur's Gate 3",
+      "cpu_tier": 6,
+      "gpu_tier": 4
+    },
+    {
+      "name": "Cyberpunk 2077",
+      "cpu_tier": 6,
+      "gpu_tier": 5
+    },
+    {
+      "name": "Hogwarts Legacy",
+      "cpu_tier": 6,
+      "gpu_tier": 5
+    },
+    {
+      "name": "Black Myth: Wukong",
+      "cpu_tier": 6,
+      "gpu_tier": 6
+    },
+    {
+      "name": "Starfield",
+      "cpu_tier": 7,
+      "gpu_tier": 6
+    },
+    {
+      "name": "Alan Wake 2",
+      "cpu_tier": 6,
+      "gpu_tier": 7
+    }
+  ]
+}

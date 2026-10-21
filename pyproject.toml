@@ -23,6 +23,9 @@ pc-polimata = "pc_polimata.cli:main"
 [tool.setuptools.packages.find]
 include = ["pc_polimata*"]
 
+[tool.setuptools.package-data]
+"pc_polimata.data" = ["*.json"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
