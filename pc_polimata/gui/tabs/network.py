@@ -28,6 +28,9 @@ class NetworkTab:
         self.interfaces = "\n".join(lines)
         set_text(self.box, self.interfaces)
 
+    def screenshot_prepare(self) -> None:
+        self.run_latency()
+
     def _show(self) -> None:
         set_text(self.box, "\n".join([*self.results, "", self.interfaces]))
 

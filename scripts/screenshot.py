@@ -1,22 +1,51 @@
-"""Gera screenshots da GUI (ex.: xvfb-run python scripts/screenshot.py)."""
+"""Gera screenshots da GUI em docs/ (Linux: `xvfb-run -s "-screen 0 1040x680x24" python scripts/screenshot.py`).
 
-from PIL import ImageGrab
+Uso: python scripts/screenshot.py [Aba=segundos ...]   ex.: Sistema=2 Sensores=20
+"""
 
-from pc_polimata.gui.app import PolimataApp
+import os
+import sys
+import tempfile
+from pathlib import Path
 
-app = PolimataApp()
-app.geometry("980x640+0+0")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+os.environ.setdefault("XDG_CONFIG_HOME", tempfile.mkdtemp())  # não usa as configs do usuário
+
+from PIL import ImageGrab  # noqa: E402
+
+from pc_polimata.gui.app import PolimataApp  # noqa: E402
+from pc_polimata.i18n import tr  # noqa: E402
+
+DEFAULT = ["Sistema=2", "Sensores=20", "Rede=2"]
+W, H = 1040, 680
 
 
-def grab(name, tab, nxt):
-    app.tabs.set(tab)
+def main(specs: list[str]) -> None:
+    app = PolimataApp()
+    app.geometry(f"{W}x{H}+0+0")
+    queue = [(name, float(secs)) for name, secs in (s.split("=") for s in specs)]
 
-    def snap():
-        ImageGrab.grab(bbox=(0, 0, 980, 640)).save(f"docs/{name}.png")
-        nxt()
+    def step() -> None:
+        if not queue:
+            app.destroy()
+            return
+        name, secs = queue.pop(0)
+        app.tabs.set(tr(name))
+        prepare = getattr(app.tab_objects[name], "screenshot_prepare", None)
+        if prepare:
+            prepare()
 
-    app.after(2500, snap)
+        def snap() -> None:
+            out = Path("docs") / f"screenshot_{name.lower().replace(' ', '_')}.png"
+            ImageGrab.grab(bbox=(0, 0, W, H)).save(out)
+            print(out)
+            step()
+
+        app.after(int(secs * 1000), snap)
+
+    app.after(500, step)
+    app.mainloop()
 
 
-grab("screenshot_sistema", "Sistema", lambda: grab("screenshot_sensores", "Sensores", app.destroy))
-app.mainloop()
+if __name__ == "__main__":
+    main(sys.argv[1:] or DEFAULT)
