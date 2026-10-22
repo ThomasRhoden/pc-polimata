@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib
 import logging
 import os
 import sys
@@ -51,8 +52,7 @@ def com_initialized() -> Iterator[None]:
     pythoncom: Any = None
     if sys.platform.startswith("win"):
         try:
-            import pythoncom  # type: ignore[import-not-found,no-redef]
-
+            pythoncom = importlib.import_module("pythoncom")  # pywin32; tipagem varia por plataforma
             pythoncom.CoInitialize()
         except Exception:  # noqa: BLE001 - sem pywin32 o WMI simplesmente fica indisponível
             pythoncom = None
