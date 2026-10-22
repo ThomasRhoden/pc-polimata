@@ -39,12 +39,18 @@ class BottleneckTab:
     def done(self, res) -> None:
         self.btn.configure(state="normal")
         if isinstance(res, Exception):
-            set_text(self.box, f"Erro: {res}")
+            set_text(self.box, tr("Erro: {error}", error=res))
             return
         self.app.record("bottleneck", res.to_dict())
         set_text(
             self.box,
-            f"{tr('Veredito')}: {res.verdict}\n{res.explanation}\n\n"
-            f"CPU {res.avg_cpu}%  |  core max {res.avg_max_core}%  |  GPU {fmt(res.avg_gpu, '%')}  |  "
-            f"{res.samples} {tr('amostras')}",
+            tr("Veredito: {verdict}", verdict=tr(res.verdict))
+            + f"\n{res.explanation}\n\n"
+            + tr(
+                "CPU {cpu}%  |  núcleo mais carregado {core}%  |  GPU {gpu}  |  {samples} amostras",
+                cpu=res.avg_cpu,
+                core=res.avg_max_core,
+                gpu=fmt(res.avg_gpu, "%"),
+                samples=res.samples,
+            ),
         )

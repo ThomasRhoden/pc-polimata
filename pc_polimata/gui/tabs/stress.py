@@ -32,7 +32,7 @@ class StressTab:
         try:
             cfg = StressConfig(float(self.duration.get()), float(self.temp.get()))
         except ValueError as exc:
-            set_text(self.box, f"{tr('Configuração inválida')}: {exc}")
+            set_text(self.box, tr("Configuração inválida: {error}", error=exc))
             return
         self.stress = StressTest(cfg)
         self.start_btn.configure(state="disabled")
@@ -46,13 +46,17 @@ class StressTab:
     def done(self, res) -> None:
         self.start_btn.configure(state="normal")
         if isinstance(res, Exception):
-            set_text(self.box, f"Erro: {res}")
+            set_text(self.box, tr("Erro: {error}", error=res))
             return
         self.app.record("stress_test", res.to_dict())
         set_text(
             self.box,
-            f"{tr('Fim')}: {res.stop_reason}\n{tr('Tempo')}: {res.elapsed_s}s   "
-            f"{tr('Temp. máx.')}: {fmt(res.max_temp_c, ' °C')}",
+            tr(
+                "Fim: {reason}\nTempo: {elapsed} s   Temp. máx.: {temp}",
+                reason=res.stop_reason,
+                elapsed=res.elapsed_s,
+                temp=fmt(res.max_temp_c, " °C"),
+            ),
         )
 
     def stop(self) -> None:

@@ -5,9 +5,9 @@ import customtkinter as ctk
 from pc_polimata.core import games
 from pc_polimata.gui import theme as t
 from pc_polimata.gui.widgets import fmt, set_text, textbox
-from pc_polimata.i18n import tr
+from pc_polimata.i18n import N_, tr
 
-AUTO = "(detectada)"
+AUTO = N_("(detectada)")
 
 
 class GamesTab:
@@ -21,7 +21,7 @@ class GamesTab:
         ctk.CTkLabel(bar, text="CPU:").pack(side="left")
         self.cpu = ctk.CTkOptionMenu(
             bar,
-            values=[AUTO, *games.known_cpus()],
+            values=[tr(AUTO), *games.known_cpus()],
             command=lambda _v: self.refresh(),
             fg_color=t.GREEN,
             button_color=t.GREEN_HOVER,
@@ -30,7 +30,7 @@ class GamesTab:
         ctk.CTkLabel(bar, text="GPU:").pack(side="left")
         self.gpu = ctk.CTkOptionMenu(
             bar,
-            values=[AUTO, *games.known_gpus()],
+            values=[tr(AUTO), *games.known_gpus()],
             command=lambda _v: self.refresh(),
             fg_color=t.GREEN,
             button_color=t.GREEN_HOVER,
@@ -43,18 +43,18 @@ class GamesTab:
         gpu, cpu = self.gpu.get(), self.cpu.get()
         est = games.estimate_for_system(
             self.app.system,
-            gpu_override=None if gpu == AUTO else gpu,
-            cpu_override=None if cpu == AUTO else cpu,
+            gpu_override=None if gpu == tr(AUTO) else gpu,
+            cpu_override=None if cpu == tr(AUTO) else cpu,
         )
         self.app.record("games_estimate", est)
         lines = [
             f"CPU: {fmt(est['cpu'])}  (tier {fmt(est['cpu_tier'])}/10)",
             f"GPU: {fmt(est['gpu'])}  (tier {fmt(est['gpu_tier'])}/10)",
             "",
-            f"{'Jogo':<26} {'Preset provável (1080p ~60 FPS)':<32} Limitado por",
+            f"{tr('Jogo'):<26} {tr('Preset provável (1080p ~60 FPS)'):<32} {tr('Limitado por')}",
             "-" * 74,
         ]
-        lines += [f"{g['game']:<26} {g['preset']:<32} {g['limited_by'] or '—'}" for g in est["games"]]
+        lines += [f"{g['game']:<26} {tr(g['preset']):<32} {g['limited_by'] or '—'}" for g in est["games"]]
         if est["gpu_tier"] is None or est["cpu_tier"] is None:
-            lines += ["", "CPU ou GPU fora da tabela: escolha um modelo equivalente nos menus acima."]
+            lines += ["", tr("CPU ou GPU fora da tabela: escolha um modelo equivalente nos menus acima.")]
         set_text(self.box, "\n".join(lines))

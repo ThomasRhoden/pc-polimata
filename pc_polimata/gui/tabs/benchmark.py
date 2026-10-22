@@ -21,7 +21,7 @@ class BenchmarkTab:
 
     def run(self) -> None:
         self.btn.configure(state="disabled")
-        set_text(self.box, tr("Executando...") + " (~10 s)")
+        set_text(self.box, tr("Executando... (~{seconds} s)", seconds=10))
         run_in_thread(
             self.btn, lambda: (benchmark.run_cpu_benchmark(4.0), benchmark.run_disk_benchmark(128)), self.done
         )
@@ -29,16 +29,24 @@ class BenchmarkTab:
     def done(self, res) -> None:
         self.btn.configure(state="normal")
         if isinstance(res, Exception):
-            set_text(self.box, f"Erro: {res}")
+            set_text(self.box, tr("Erro: {error}", error=res))
             return
         cpu, disk = res
         self.app.record("cpu_benchmark", cpu.to_dict(), history_kind="cpu")
         self.app.record("disk_benchmark", disk.to_dict(), history_kind="disk")
         set_text(
             self.box,
-            f"CPU single-core: {cpu.single_core_score} pts\n"
-            f"CPU multi-core:  {cpu.multi_core_score} pts ({cpu.processes} proc., x{cpu.scaling})\n\n"
-            f"Disk write: {disk.write_mb_s} MB/s\nDisk read:  {disk.read_mb_s} MB/s ({disk.size_mb} MB, OS cache)",
+            tr(
+                "CPU single-core: {single} pts\nCPU multi-core:  {multi} pts ({procs} processos, escala {scaling}x)\n\n"
+                "Disco escrita: {write} MB/s\nDisco leitura: {read} MB/s (arquivo de {size} MB; pode vir do cache)",
+                single=cpu.single_core_score,
+                multi=cpu.multi_core_score,
+                procs=cpu.processes,
+                scaling=cpu.scaling,
+                write=disk.write_mb_s,
+                read=disk.read_mb_s,
+                size=disk.size_mb,
+            ),
         )
 
     def run_memory(self) -> None:
@@ -49,12 +57,17 @@ class BenchmarkTab:
     def done_memory(self, res) -> None:
         self.mem_btn.configure(state="normal")
         if isinstance(res, Exception):
-            set_text(self.box, f"Erro: {res}")
+            set_text(self.box, tr("Erro: {error}", error=res))
             return
         self.app.record("memory_benchmark", res.to_dict(), history_kind="memory")
         set_text(
             self.box,
-            f"RAM bandwidth (copy): {res.bandwidth_gb_s} GB/s\n"
-            f"RAM latency (random access): ~{res.latency_ns} ns\n"
-            f"Backend: {res.backend} — approximation, {res.size_mb} MB buffer",
+            tr(
+                "Largura de banda da RAM (cópia): {bw} GB/s\nLatência da RAM (acesso aleatório): ~{lat} ns\n"
+                "Backend: {backend} — aproximação, buffer de {size} MB",
+                bw=res.bandwidth_gb_s,
+                lat=res.latency_ns,
+                backend=res.backend,
+                size=res.size_mb,
+            ),
         )

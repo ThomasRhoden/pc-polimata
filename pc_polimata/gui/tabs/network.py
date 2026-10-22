@@ -38,30 +38,42 @@ class NetworkTab:
     def done_latency(self, res) -> None:
         self.lat_btn.configure(state="normal")
         if isinstance(res, Exception):
-            self.results = [f"Erro: {res}"]
+            self.results = [tr("Erro: {error}", error=res)]
         else:
             self.app.record("network_latency", [r.to_dict() for r in res])
             self.results = [
-                f"TCP {r.host}:{r.port}  avg {fmt(r.avg_ms, ' ms')}  min {fmt(r.min_ms, ' ms')}  "
-                f"jitter {fmt(r.jitter_ms, ' ms')}  {tr('falhas')} {r.failures}"
+                tr(
+                    "TCP {host}:{port}  média {avg}  mín {min}  jitter {jitter}  falhas {failures}",
+                    host=r.host,
+                    port=r.port,
+                    avg=fmt(r.avg_ms, " ms"),
+                    min=fmt(r.min_ms, " ms"),
+                    jitter=fmt(r.jitter_ms, " ms"),
+                    failures=r.failures,
+                )
                 for r in res
             ]
         self._show()
 
     def run_download(self) -> None:
         self.dl_btn.configure(state="disabled")
-        self.results = [tr("Executando...") + " (≤10 s)"]
+        self.results = [tr("Executando... (~{seconds} s)", seconds=10)]
         self._show()
         run_in_thread(self.dl_btn, network.download_throughput, self.done_download)
 
     def done_download(self, res) -> None:
         self.dl_btn.configure(state="normal")
         if isinstance(res, Exception) or res.error:
-            self.results = [f"Erro: {res if isinstance(res, Exception) else res.error}"]
+            self.results = [tr("Erro: {error}", error=res if isinstance(res, Exception) else res.error)]
         else:
             self.app.record("network_download", res.to_dict())
             self.results = [
-                f"Download: {res.mbps} Mbit/s ({res.bytes_received / 1e6:.1f} MB em {res.seconds:.1f} s"
-                f"{', timeout' if res.timed_out else ''})"
+                tr(
+                    "Download: {mbps} Mbit/s ({mb:.1f} MB em {seconds:.1f} s)",
+                    mbps=res.mbps,
+                    mb=res.bytes_received / 1e6,
+                    seconds=res.seconds,
+                )
+                + (" — " + tr("tempo limite atingido") if res.timed_out else "")
             ]
         self._show()

@@ -27,13 +27,15 @@ class DiagnosisTab:
         self.update_key_label()
         set_text(
             self.box,
-            "O diagnóstico por regras funciona offline. A análise por LLM envia o relatório (sem hostname)\n"
-            "ao endpoint configurado em Configurações. Execute benchmarks/gargalo/SMART antes para\n"
-            "um diagnóstico mais completo.",
+            tr(
+                "O diagnóstico por regras funciona offline. A análise por LLM envia o relatório (sem hostname)\n"
+                "ao endpoint configurado em Configurações. Execute benchmarks/gargalo/SMART antes para\n"
+                "um diagnóstico mais completo."
+            ),
         )
 
     def update_key_label(self) -> None:
-        self.key_label.configure(text=f"API key: {secrets.mask(secrets.get_api_key())}")
+        self.key_label.configure(text=tr("Chave de API: {key}", key=tr(secrets.mask(secrets.get_api_key()))))
 
     def run(self) -> None:
         self.update_key_label()
@@ -53,13 +55,13 @@ class DiagnosisTab:
     def done(self, res) -> None:
         self.btn.configure(state="normal")
         if isinstance(res, Exception):
-            set_text(self.box, f"Erro: {res}")
+            set_text(self.box, tr("Erro: {error}", error=res))
             return
         self.app.record("diagnosis", res.to_dict())
-        lines = [f"Saúde geral: {res.score}/100   (fonte: {res.source})", ""]
-        lines += [f"{ICONS[f.severity]} [{f.severity}] {f.title}\n    {f.detail}" for f in res.findings]
+        lines = [tr("Saúde geral: {score}/100   (fonte: {source})", score=res.score, source=tr(res.source)), ""]
+        lines += [f"{ICONS[f.severity]} [{tr(f.severity)}] {f.title}\n    {f.detail}" for f in res.findings]
         if self.use_llm.get() and not res.llm_analysis:
-            lines += ["", f"LLM indisponível: {res.llm_error or 'chave de API não configurada'}"]
+            lines += ["", tr("LLM indisponível: {error}", error=res.llm_error or tr("chave de API não configurada"))]
         if res.llm_analysis:
-            lines += ["", "— Análise do LLM —", res.llm_analysis]
+            lines += ["", tr("— Análise do LLM —"), res.llm_analysis]
         set_text(self.box, "\n".join(lines))

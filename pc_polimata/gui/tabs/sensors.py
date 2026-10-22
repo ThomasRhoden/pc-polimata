@@ -47,14 +47,25 @@ class SensorsTab:
             bar.set((pct or 0) / 100)
             val.configure(text=fmt(pct, "%"))
         unit = self.app.settings.temperature_unit
-        hint = f"\n{HINT}" if sys.platform.startswith("win") and snap.cpu_temp_c is None else ""
+        hint = f"\n{tr(HINT)}" if sys.platform.startswith("win") and snap.cpu_temp_c is None else ""
         self.extra.configure(
             text=(
-                f"{tr('Temperatura CPU')}: {format_temp(snap.cpu_temp_c, unit)}   "
-                f"{tr('Temperatura GPU')}: {format_temp(snap.gpu_temp_c, unit)}\n"
-                f"{tr('Disco leitura')}: {snap.disk_read_mb_s} MB/s   {tr('escrita')}: {snap.disk_write_mb_s} MB/s\n"
-                f"{tr('Por núcleo')}: {' '.join(f'{p:.0f}' for p in snap.per_core_percent)}{hint}"
+                tr(
+                    "Temperatura CPU: {cpu}   Temperatura GPU: {gpu}",
+                    cpu=format_temp(snap.cpu_temp_c, unit),
+                    gpu=format_temp(snap.gpu_temp_c, unit),
+                )
+                + "\n"
+                + tr(
+                    "Disco leitura: {read} MB/s   escrita: {write} MB/s",
+                    read=snap.disk_read_mb_s,
+                    write=snap.disk_write_mb_s,
+                )
+                + "\n"
+                + tr("Por núcleo: {cores}", cores=" ".join(f"{p:.0f}" for p in snap.per_core_percent))
+                + hint
             )
         )
         self.chart.redraw()
+        self.app.on_snapshot(snap)
         self.extra.after(self.app.settings.refresh_ms, self.refresh)
