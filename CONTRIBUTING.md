@@ -8,14 +8,15 @@ Obrigado pelo interesse! Este é um projeto de portfólio, mas issues e PRs são
 git clone https://github.com/ThomasRhoden/pc-polimata.git
 cd pc-polimata
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,memory]"
+pip install -e ".[dev,memory,pdf]"
 ```
 
 ## Antes de abrir um PR
 
 ```bash
 ruff check . && ruff format --check .
-pytest
+mypy
+pytest --cov
 xvfb-run -a pytest tests/test_gui_smoke.py    # Linux sem monitor (opcional)
 ```
 

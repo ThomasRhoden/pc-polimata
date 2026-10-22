@@ -3,18 +3,21 @@
 [![Release](https://img.shields.io/github/v/release/ThomasRhoden/pc-polimata)](https://github.com/ThomasRhoden/pc-polimata/releases)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3f6b3a)
 ![License](https://img.shields.io/badge/license-MIT-7a5a3a)
+![Coverage](https://img.shields.io/badge/coverage-91%25-3f6b3a)
+![mypy](https://img.shields.io/badge/mypy-strict%20(core)-7a5a3a)
+![i18n](https://img.shields.io/badge/i18n-PT%20%7C%20EN-3f6b3a)
 
 Aplicativo desktop de **diagnóstico, monitoramento e benchmark de hardware**, escrito do zero em Python.
 Inspirado na proposta de ferramentas como AIDA64, CPU-Z, GPU-Z e Cinebench — **nenhum código dessas
 ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são próprios.
 
-![Aba Sensores](docs/screenshot_sensores.png)
+![Demonstração](docs/demo.gif)
 
 ## Funcionalidades
 
 | Aba | O que faz |
 |-----|-----------|
-| **Sistema** | SO, CPU, RAM, discos e GPUs (NVIDIA, AMD, Intel) + **saúde SMART** dos discos (smartctl) |
+| **Sistema** | SO, CPU, RAM, discos e GPUs (NVIDIA, AMD, Intel), **drivers de vídeo** (versão/data, aviso se > 6 meses) e **saúde SMART** |
 | **Sensores** | Uso de CPU (total e por núcleo), RAM, disco (MB/s) e GPU em tempo real, temperaturas e **gráfico dos últimos 60 s** |
 | **Benchmark** | Score single/multi-core (`multiprocessing`), disco (leitura/escrita MB/s) e **memória** (largura de banda e latência) |
 | **Stress test** | Carga em todos os núcleos com duração, limite de temperatura e botão de parada segura |
@@ -23,13 +26,19 @@ ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são pr�
 | **Histórico** | Toda execução de benchmark salva em **SQLite**; comparação com a anterior e gráfico de evolução |
 | **Jogos** | **Estimativa** do preset provável em 19 jogos populares a partir de tiers de CPU/GPU (não é medição) |
 | **Diagnóstico IA** | Regras offline com nota de saúde 0–100 e dicas; análise opcional por **LLM** (API compatível com OpenAI) |
-| **Relatório** | Exporta tudo para JSON ou HTML |
-| **Configurações** | Idioma PT/EN, tema, °C/°F, intervalo de atualização, endpoint/modelo/chave do LLM |
+| **Relatório** | Exporta tudo para JSON, HTML (tema verde/marrom) ou **PDF** |
+| **Configurações** | Idioma PT/EN, tema, °C/°F, intervalo, **limites de alerta**, verificação de atualização (opt-in) e LLM |
+
+**Alertas:** quando CPU/GPU, RAM ou disco passam do limite configurado, uma faixa não bloqueante aparece no topo
+(sem repetir enquanto o valor continua alto) e o evento vai para `alerts.log`.
+
+![Alerta (leitura simulada)](docs/screenshot_alerta.png)
 
 <table>
 <tr><td><img src="docs/screenshot_historico.png" alt="Histórico"></td><td><img src="docs/screenshot_jogos.png" alt="Jogos"></td></tr>
 <tr><td><img src="docs/screenshot_sistema.png" alt="Sistema"></td><td><img src="docs/screenshot_rede.png" alt="Rede"></td></tr>
 <tr><td><img src="docs/screenshot_diagnostico_ia.png" alt="Diagnóstico"></td><td><img src="docs/screenshot_configuracoes.png" alt="Configurações"></td></tr>
+<tr><td><img src="docs/en_jogos.png" alt="Interface em inglês"></td><td><img src="docs/report_html.png" alt="Relatório HTML"></td></tr>
 </table>
 
 ### Suporte de hardware
@@ -38,8 +47,9 @@ ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são pr�
 |---------|---------|-------|
 | Temperatura CPU | LibreHardwareMonitor/OpenHardwareMonitor em execução (WMI) | `psutil` (coretemp, k10temp...) |
 | GPU NVIDIA (uso, VRAM, temp.) | NVML / GPUtil | NVML / GPUtil |
-| GPU AMD | nome + VRAM (WMI); temp. via LibreHardwareMonitor | sysfs `amdgpu` ou `rocm-smi` (uso, VRAM, temp.) |
-| GPU Intel | nome (WMI) | — |
+| GPU AMD | nome, VRAM e **uso** (WMI); temp. via LibreHardwareMonitor | sysfs `amdgpu` ou `rocm-smi` (uso, VRAM, temp.) |
+| GPU Intel | nome, VRAM e **uso** (WMI) | — |
+| Driver de vídeo | versão + data (WMI) | versão (NVML / `nvidia-smi`); data indisponível |
 | SMART | `smartctl` (smartmontools) como administrador | `smartctl` como root |
 
 ### CLI (headless)
@@ -50,6 +60,8 @@ pc-polimata --report -o relatorio.html                 # HTML
 pc-polimata --benchmark --memory --duration 3          # benchmarks (salvos no histórico)
 pc-polimata --smart --games --diagnose -o r.json       # SMART, jogos e diagnóstico por regras
 pc-polimata --diagnose --llm                           # + análise por LLM (requer chave)
+pc-polimata --drivers --report -o relatorio.pdf        # PDF (requer reportlab)
+pc-polimata --lang en --check-update                   # em inglês; verifica nova versão
 ```
 
 `python -m pc_polimata ...` funciona igual, sem instalar.
@@ -78,7 +90,10 @@ pc_polimata/
 │   ├── diagnosis.py      # regras + LLM opcional
 │   ├── settings.py       # preferências em JSON no diretório de config do SO
 │   ├── secrets.py        # chave de API (env var ou arquivo 0600)
-│   └── report.py         # JSON / HTML
+│   ├── alerts.py         # limites + log rotativo
+│   ├── drivers.py        # versão/idade do driver de vídeo
+│   ├── updates.py        # nova versão via API do GitHub (opt-in)
+│   └── report.py         # JSON / HTML / PDF
 ├── data/hardware_tiers.json
 ├── gui/                  # customtkinter: app.py, widgets.py (LineChart em Canvas), tabs/
 ├── i18n.py               # PT (padrão) / EN
@@ -116,21 +131,28 @@ python -m pc_polimata
 Testes e lint:
 
 ```bash
-pip install -e ".[dev]"
-ruff check . && pytest
-xvfb-run -a pytest tests/test_gui_smoke.py   # smoke test da GUI no Linux sem monitor
+pip install -e ".[dev,pdf,memory]"
+ruff check .
+mypy                       # modo strict em pc_polimata/core e i18n
+pytest --cov               # cobertura (núcleo + CLI): 91 %
+xvfb-run -a pytest tests/test_gui_smoke.py   # smoke test da GUI (PT e EN) no Linux sem monitor
 ```
+
+Qualidade atual (v0.3.0): **291 testes** passando (incluindo a checagem de tradução EN que varre o código),
+**91 % de cobertura** no núcleo e na CLI e **mypy strict** sem erros no núcleo.
 
 ## Privacidade
 
 Tudo roda localmente. Só há tráfego de rede quando você usa a aba Rede (conexões TCP e download de
-teste da Cloudflare) ou o diagnóstico por LLM (o relatório, sem hostname, vai ao endpoint configurado).
+teste da Cloudflare), o diagnóstico por LLM (o relatório, sem hostname, vai ao endpoint configurado) ou a
+verificação de atualização (desligada por padrão; consulta a API pública do GitHub).
 Configurações, histórico e chave ficam no diretório de configuração do usuário
 (`%APPDATA%\PCPolimata` ou `~/.config/pc-polimata`).
 
 ## Limitações conhecidas
 
-- **GPU**: telemetria completa em NVIDIA e AMD no Linux. No Windows, GPUs AMD/Intel mostram nome e VRAM; uso fica "n/d" ([#9](https://github.com/ThomasRhoden/pc-polimata/issues/9)).
+- **GPU**: telemetria completa em NVIDIA e AMD no Linux. No Windows, AMD/Intel têm uso e VRAM via WMI; com várias GPUs, a associação entre contador e placa é aproximada (o WMI não liga o LUID ao adaptador).
+- **Data do driver** só é conhecida no Windows; no Linux o aviso de driver antigo não aparece.
 - **Temperatura no Windows** depende do LibreHardwareMonitor aberto; sem ele aparece "n/d" (com uma dica) e o limite de temperatura do stress test fica inativo.
 - **Scores** de CPU/memória são próprios do PC Polimata e não comparáveis a Cinebench/AIDA64. A latência de memória medida em Python inclui overhead do interpretador (é um teto).
 - **Leitura de disco** pode ser inflada pelo cache do SO.
@@ -156,22 +178,27 @@ Itens abertos nas [issues](https://github.com/ThomasRhoden/pc-polimata/issues); 
 **PC Polimata** is a from-scratch Python desktop app for hardware diagnostics, monitoring and benchmarking,
 inspired by tools such as AIDA64, CPU-Z, GPU-Z and Cinebench (no code from them was copied or decompiled).
 
-**Features:** system info with SMART disk health; live sensors with 60 s charts; CPU (single/multi-core),
+**Features:** system info with SMART disk health and graphics driver age; live sensors with 60 s charts; CPU (single/multi-core),
 disk and memory benchmarks; stress test with temperature limit and safe stop; CPU-vs-GPU bottleneck
 heuristic; network tab (TCP latency, interfaces, download test); SQLite benchmark history with run
 comparison; game performance **estimates** from CPU/GPU tiers; health diagnosis with offline rules and an
-optional LLM (any OpenAI-compatible API); JSON/HTML reports; settings with PT/EN UI. Headless CLI included
+optional LLM (any OpenAI-compatible API); configurable alerts (non-blocking banner + log file); opt-in update
+check; JSON/HTML/PDF reports; fully translated PT/EN UI. Headless CLI included
 (`pc-polimata --report`, `--benchmark`, `--memory`, `--smart`, `--games`, `--diagnose [--llm]`).
 
 **Architecture:** GUI-free `pc_polimata/core` (pytest-covered, dependency-injected for hardware/network
 fakes) + `customtkinter` GUI + `argparse` CLI. Every optional backend degrades gracefully to "n/a".
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+**Quality:** 291 tests (including an AST-based EN translation check), 91 % coverage on core + CLI, strict mypy on
+the core.
+
 **Run:** `pipx install git+https://github.com/ThomasRhoden/pc-polimata.git && pc-polimata`, or
 `pip install -r requirements.txt && python -m pc_polimata`. Tests: `ruff check . && pytest`.
 Windows .exe build: [docs/BUILD.md](docs/BUILD.md).
 
-**Hardware support:** NVIDIA via NVML/GPUtil, AMD on Linux via sysfs/rocm-smi, GPU names on Windows via WMI;
+**Hardware support:** NVIDIA via NVML/GPUtil, AMD on Linux via sysfs/rocm-smi, any GPU's usage on Windows via WMI
+performance counters;
 Windows temperatures require LibreHardwareMonitor running; SMART requires smartctl with admin/root.
 
 **Limitations:** scores are PC Polimata-specific; game estimates and bottleneck analysis are heuristics;

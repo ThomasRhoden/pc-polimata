@@ -5,6 +5,22 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.3.0] - 2026-10-21
+
+### Adicionado
+- Uso de GPU de **qualquer fabricante no Windows** via contadores WMI `GPUEngine` (soma do motor 3D por adaptador, como o Gerenciador de Tarefas) (#9).
+- **Tradução EN completa**: toda string de interface, CLI, diagnóstico e relatório passa por `tr()`; teste que varre o código (AST) e falha se faltar chave EN, se sobrar tradução sem uso ou se os placeholders divergirem. CLI com `--lang`.
+- **Alertas** configuráveis (temperatura de CPU/GPU, RAM %, disco %) com faixa não bloqueante na GUI, sem repetição enquanto o valor continua alto, registrados em `alerts.log` (rotativo).
+- **Drivers de vídeo**: versão e data (WMI / `nvidia-smi`), com aviso para drivers com mais de ~6 meses; seção na aba Sistema e `--drivers` na CLI.
+- **Verificação de atualização** do PC Polimata via API de releases do GitHub (opt-in nas Configurações, timeout de 5 s; `--check-update` na CLI).
+- **Exportação em PDF** (reportlab, opcional) com instruções para imprimir o HTML quando ausente; **novo template HTML** escuro verde/marrom com cards de resumo, tabelas e estilo de impressão.
+- GIF de demonstração e capturas novas (incluindo interface em inglês e faixa de alerta).
+
+### Qualidade
+- `mypy --strict` sem erros em `pc_polimata/core` e `i18n`; dependências de dev incluem mypy, pytest-cov e types-psutil.
+- Cobertura de testes de 91 % (núcleo + CLI; a GUI é coberta por smoke test sob xvfb e excluída da medição).
+- Conexões SQLite fechadas ao sair da GUI e nos testes.
+
 ## [0.2.0] - 2026-10-21
 
 ### Adicionado
@@ -42,6 +58,7 @@ Primeira versão pública.
 - CLI headless `python -m pc_polimata --report [--benchmark] [-o arquivo.json|.html]`.
 - Exportação JSON/HTML, testes pytest, ruff, licença MIT.
 
-[Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.2.0...HEAD
+[Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ThomasRhoden/pc-polimata/releases/tag/v0.1.0
