@@ -1,7 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec do PC Polimata (Windows). Uso, na raiz do repositório:
 #   pyinstaller packaging/pc_polimata.spec --clean
-# Resultado: dist/PCPolimata/PCPolimata.exe (modo pasta, inicia mais rápido que --onefile).
+# Resultado (modo pasta, inicia mais rápido que --onefile), em dist/PCPolimata/:
+#   PCPolimata.exe   GUI (sem janela de console)
+#   pc-polimata.exe  mesma aplicação com console, para a CLI (--report, --version...)
+import os
 from pathlib import Path
 
 import customtkinter
@@ -20,13 +23,27 @@ a = Analysis(
     excludes=["pytest", "ruff"],
 )
 pyz = PYZ(a.pure)
-exe = EXE(
-    pyz,
-    a.scripts,
-    [],
-    exclude_binaries=True,
-    name="PCPolimata",
-    console=False,
-    icon=None,
-)
-coll = COLLECT(exe, a.binaries, a.datas, name="PCPolimata")
+
+if os.environ.get("PC_POLIMATA_ONEFILE"):
+    # Arquivo único dist/pc-polimata.exe (com console; sem argumentos abre a GUI). Mais lento para iniciar.
+    EXE(pyz, a.scripts, a.binaries, a.datas, [], name="pc-polimata", console=True, icon=None)
+else:
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name="PCPolimata",
+        console=False,
+        icon=None,
+    )
+    cli = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name="pc-polimata",
+        console=True,
+        icon=None,
+    )
+    coll = COLLECT(exe, cli, a.binaries, a.datas, name="PCPolimata")
