@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -19,6 +19,7 @@ from pc_polimata.core.units import TEMP_UNITS
 
 if TYPE_CHECKING:
     from pc_polimata.core.alerts import AlertThresholds
+    from pc_polimata.core.live import OverlayConfig
 
 ACCENTS = ("floresta", "terra")
 LANGUAGES = ("pt", "en")
@@ -45,6 +46,11 @@ class Settings:
     alert_gpu_temp_c: float = 85.0
     alert_ram_percent: float = 90.0
     alert_disk_percent: float = 95.0
+    tray_icon: bool = True  # só tem efeito com pystray + Pillow instalados
+    overlay_corner: str = "top-right"
+    overlay_opacity: float = 0.8
+    overlay_size: str = "medium"
+    disabled_plugins: list[str] = field(default_factory=list)
 
     def validate(self) -> Settings:
         if self.language not in LANGUAGES:
@@ -57,8 +63,19 @@ class Settings:
             raise ValueError("refresh_ms must be between 250 and 10000")
         self.refresh_ms = int(self.refresh_ms)
         self.check_updates = bool(self.check_updates)
+        self.tray_icon = bool(self.tray_icon)
+        self.overlay_opacity = float(self.overlay_opacity)
+        self.overlay_config()  # valida o overlay
+        if not isinstance(self.disabled_plugins, list) or not all(isinstance(n, str) for n in self.disabled_plugins):
+            raise ValueError("disabled_plugins must be a list of names")
+        self.disabled_plugins = sorted(set(self.disabled_plugins))
         self.alert_thresholds()  # valida os limites
         return self
+
+    def overlay_config(self) -> OverlayConfig:
+        from pc_polimata.core.live import OverlayConfig  # import tardio: live importa sensors
+
+        return OverlayConfig(self.overlay_corner, float(self.overlay_opacity), self.overlay_size).validate()
 
     def alert_thresholds(self) -> AlertThresholds:
         from pc_polimata.core.alerts import AlertThresholds  # import tardio: alerts importa settings
