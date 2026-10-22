@@ -1,0 +1,46 @@
+{
+  "format": "pc-polimata-runs",
+  "format_version": 1,
+  "app_version": "0.4.0",
+  "exported_at": "2026-10-22T03:00:00+00:00",
+  "label": "Exemplo: desktop",
+  "machine": {
+    "cpu": "AMD Ryzen 5 5600X",
+    "cores": null,
+    "threads": null,
+    "gpus": [
+      "NVIDIA GeForce RTX 3060"
+    ],
+    "ram_gb": 32.0,
+    "os": "Windows 11"
+  },
+  "runs": [
+    {
+      "kind": "cpu",
+      "created_at": "2026-10-22T02:00:00+00:00",
+      "metrics": {
+        "single_core_score": 1480.0,
+        "multi_core_score": 8120.0
+      },
+      "note": "exemplo / example data"
+    },
+    {
+      "kind": "disk",
+      "created_at": "2026-10-22T02:00:00+00:00",
+      "metrics": {
+        "write_mb_s": 2900.0,
+        "read_mb_s": 3300.0
+      },
+      "note": "exemplo / example data"
+    },
+    {
+      "kind": "memory",
+      "created_at": "2026-10-22T02:00:00+00:00",
+      "metrics": {
+        "bandwidth_gb_s": 21.4,
+        "latency_ns": 78.0
+      },
+      "note": "exemplo / example data"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-"""Gera screenshots da GUI em docs/ (Linux: `xvfb-run -s "-screen 0 1180x720x24" python scripts/screenshot.py`).
+"""Gera screenshots da GUI em docs/ (Linux: `xvfb-run -s "-screen 0 1440x760x24" python scripts/screenshot.py`).
 
 Uso: python scripts/screenshot.py [--lang en] [--prefix nome] [--gif] [Aba=segundos ...]
 ex.: python scripts/screenshot.py Sistema=2 Sensores=20
@@ -38,12 +38,20 @@ def _demo_games(tab) -> None:
     tab.refresh()
 
 
+def _demo_compare(tab) -> None:
+    # Arquivos de EXEMPLO (valores ilustrativos) em docs/examples/.
+    tab.load("a", "docs/examples/runs_desktop_example.json")
+    tab.load("b", "docs/examples/runs_notebook_example.json")
+
+
 # Ações executadas antes de capturar cada aba (apenas para as imagens do README).
 DEMO_ACTIONS = {
     "Rede": lambda tab: tab.run_latency(),
     "Histórico": lambda tab: tab.refresh(),
     "Jogos": _demo_games,
     "Diagnóstico IA": lambda tab: tab.run(),
+    "Comparar": _demo_compare,
+    "Overlay & FPS": lambda tab: tab.app.toggle_overlay(),
 }
 
 
@@ -52,12 +60,12 @@ def _demo_alert(app: PolimataApp) -> None:
     app.on_snapshot(SensorSnapshot(0, 97, [97], 60, 0, 0, cpu_temp_c=91.0))
 
 
-W, H = 1180, 720
+W, H = 1440, 760
 
 
 def slug(name: str) -> str:
     ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
-    return ascii_name.lower().replace(" ", "_")
+    return ascii_name.strip().lower().replace(" & ", "_").replace(" ", "_")
 
 
 def main(argv: list[str]) -> None:
@@ -79,9 +87,14 @@ def main(argv: list[str]) -> None:
             _demo_alert(app)
             name = "Sensores"
             target = "alerta"
+        elif name == "Plugins":  # Configurações rolada até a seção de plugins
+            name, target = "Configurações", "plugins"
+            app.after(300, lambda: app.tab_objects[name].scroll._parent_canvas.yview_moveto(1.0))
         else:
             target = slug(name)
-        app.tabs.set(tr(name))
+        if app.overlay is not None and name != "Overlay & FPS":
+            app.toggle_overlay()
+        app.tabs.set(name if name.startswith("🔌") else tr(name))
         if name in DEMO_ACTIONS and target != "alerta":
             DEMO_ACTIONS[name](app.tab_objects[name])
 

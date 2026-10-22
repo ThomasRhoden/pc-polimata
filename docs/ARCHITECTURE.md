@@ -27,6 +27,16 @@ flowchart LR
         HI[history]
         RP[report]
         CFG[settings / secrets / units]
+        PL[plugins]
+        PM[presentmon]
+        EX[exchange]
+        LV[live]
+    end
+
+    subgraph Plugins["Plugins (isolados por PluginHost)"]
+        BI[embutidos: uptime, battery]
+        EP[(entry points<br/>pc_polimata.plugins)]
+        LF[(pasta local<br/>config/plugins/*.py)]
     end
 
     subgraph Externos["Fontes externas (opcionais)"]
@@ -38,6 +48,8 @@ flowchart LR
         LLM[(API compatível OpenAI)]
         DB[(SQLite)]
         TIERS[(data/hardware_tiers.json)]
+        PMX[(PresentMon.exe)]
+        TRAY[(pystray + Pillow)]
     end
 
     GUI --> Core
@@ -52,6 +64,11 @@ flowchart LR
     GA --> TIERS
     BN --> SE
     ST --> SE
+    PL --> BI & EP & LF
+    PM --> PMX
+    EX --> HI
+    GUI -.bandeja.-> TRAY
+    LV --> SE
 ```
 
 ## Princípios
