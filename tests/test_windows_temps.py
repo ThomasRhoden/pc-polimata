@@ -51,4 +51,44 @@ def test_program_not_running():
 def test_video_controllers():
     fake = FakeWMI(controllers=[NS(Name="AMD Radeon RX 6600", DriverVersion="31.0", AdapterRAM=2**33)])
     [gpu] = wt.list_video_controllers(fake, platform="win32")
-    assert gpu == {"name": "AMD Radeon RX 6600", "driver": "31.0", "memory_total_mb": 8192}
+    assert gpu == {"name": "AMD Radeon RX 6600", "driver": "31.0", "memory_total_mb": 8192, "driver_date": None}
+
+
+def engine(name, util):
+    return NS(Name=name, UtilizationPercentage=util)
+
+
+ENGINES = [
+    engine("pid_10_luid_0x00000000_0x0000D1B1_phys_0_eng_0_engtype_3D", 30),
+    engine("pid_22_luid_0x00000000_0x0000D1B1_phys_0_eng_0_engtype_3D", 25),
+    engine("pid_22_luid_0x00000000_0x0000D1B1_phys_0_eng_3_engtype_VideoDecode", 90),
+    engine("pid_5_luid_0x00000000_0x0000E2C2_phys_0_eng_0_engtype_3D", 80),
+    engine("pid_6_luid_0x00000000_0x0000E2C2_phys_0_eng_0_engtype_3D", 70),
+    engine("garbage", 50),
+]
+
+
+def test_parse_gpu_engines_sums_3d_per_adapter():
+    assert wt.parse_gpu_engines(ENGINES) == {
+        "0x00000000_0x0000d1b1_phys_0": 55.0,
+        "0x00000000_0x0000e2c2_phys_0": 100.0,  # 150 limitado a 100
+    }
+
+
+def test_read_gpu_utilization():
+    fake = NS(WMI=lambda: NS(Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine=lambda: ENGINES))
+    assert len(wt.read_gpu_utilization(fake, platform="win32")) == 2
+    assert wt.read_gpu_utilization(fake, platform="linux") == {}
+
+
+def test_read_gpu_utilization_missing_class():
+    def boom():
+        raise AttributeError("classe inexistente")
+
+    fake = NS(WMI=lambda: NS(Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine=boom))
+    assert wt.read_gpu_utilization(fake, platform="win32") == {}
+
+
+def test_parse_driver_date():
+    assert wt.parse_driver_date("20240315000000.000000-000") == "2024-03-15"
+    assert wt.parse_driver_date(None) is None

@@ -27,6 +27,7 @@ class GPUStatus:
     temperature_c: float | None = None
     driver: str | None = None
     source: str = "unknown"
+    driver_date: str | None = None  # AAAA-MM-DD, quando o SO informa (Windows/WMI)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -172,16 +173,36 @@ def _from_rocm_smi() -> list[GPUStatus]:
     return parse_rocm_smi(out)
 
 
+def assign_utilization(n_controllers: int, per_adapter: dict[str, float]) -> list[float | None]:
+    """Distribui o uso por adaptador entre os controladores do WMI.
+
+    O WMI não liga o LUID do contador ao Win32_VideoController. Com uma GPU, usamos o maior
+    valor (adaptadores virtuais costumam ficar em 0); com várias, a ordem dos LUIDs
+    é uma aproximação documentada.
+    """
+    if n_controllers == 0 or not per_adapter:
+        return [None] * n_controllers
+    values = list(per_adapter.values())
+    if n_controllers == 1:
+        return [round(max(values), 1)]
+    return [round(values[i], 1) if i < len(values) else None for i in range(n_controllers)]
+
+
 def _from_wmi() -> list[GPUStatus]:
-    from pc_polimata.core.windows_temps import list_video_controllers, read_windows_temps
+    from pc_polimata.core.windows_temps import list_video_controllers, read_gpu_utilization, read_windows_temps
 
     controllers = list_video_controllers()
-    temp = read_windows_temps().gpu_c if controllers else None
+    if not controllers:
+        return []
+    temp = read_windows_temps().gpu_c
+    loads = assign_utilization(len(controllers), read_gpu_utilization())
     return [
         GPUStatus(
             name=c["name"],
+            load_percent=loads[i],
             memory_total_mb=c["memory_total_mb"],
             driver=c["driver"],
+            driver_date=c.get("driver_date"),
             temperature_c=temp if i == 0 else None,
             source="wmi",
         )

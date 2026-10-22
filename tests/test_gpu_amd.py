@@ -68,3 +68,25 @@ def test_get_gpus_never_raises(monkeypatch):
 
     monkeypatch.setattr(gpu, "BACKENDS", (boom, lambda: [gpu.GPUStatus("X")]))
     assert gpu.get_gpus()[0].name == "X"
+
+
+def test_assign_utilization():
+    assert gpu.assign_utilization(1, {"a": 0.0, "b": 42.04}) == [42.0]
+    assert gpu.assign_utilization(2, {"a": 10.0}) == [10.0, None]
+    assert gpu.assign_utilization(2, {}) == [None, None]
+
+
+def test_from_wmi_combines_sources(monkeypatch):
+    from pc_polimata.core import windows_temps as wt
+
+    monkeypatch.setattr(
+        wt,
+        "list_video_controllers",
+        lambda: [
+            {"name": "AMD Radeon RX 6600", "driver": "31.0", "memory_total_mb": 8192, "driver_date": "2024-01-02"}
+        ],
+    )
+    monkeypatch.setattr(wt, "read_gpu_utilization", lambda: {"x": 63.0})
+    monkeypatch.setattr(wt, "read_windows_temps", lambda: wt.WindowsTemps(gpu_c=58.0))
+    [g] = gpu._from_wmi()
+    assert (g.load_percent, g.temperature_c, g.driver_date, g.source) == (63.0, 58.0, "2024-01-02", "wmi")
