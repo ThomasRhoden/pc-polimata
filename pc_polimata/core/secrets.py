@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 
 from pc_polimata.core.settings import config_dir
+from pc_polimata.i18n import N_
 
 ENV_VARS = ("PC_POLIMATA_API_KEY", "OPENAI_API_KEY")
 
@@ -44,5 +45,5 @@ def save_api_key(key: str, directory: Path | None = None) -> Path:
 
 def mask(key: str | None) -> str:
     if not key:
-        return "(não configurada)"
+        return N_("(não configurada)")
     return f"{key[:3]}…{key[-4:]}" if len(key) > 8 else "••••"

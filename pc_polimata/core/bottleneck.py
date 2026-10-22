@@ -13,6 +13,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 
 from pc_polimata.core.sensors import SensorMonitor, SensorSnapshot
+from pc_polimata.i18n import N_, tr
 
 GPU_BOUND_THRESHOLD = 90.0
 CPU_BOUND_THRESHOLD = 85.0
@@ -38,7 +39,7 @@ def _mean(values: list[float]) -> float:
 
 def analyze(samples: list[SensorSnapshot]) -> BottleneckResult:
     if not samples:
-        return BottleneckResult("Indeterminado", "Nenhuma amostra coletada.", 0, 0, None, 0)
+        return BottleneckResult(N_("Indeterminado"), tr("Nenhuma amostra coletada."), 0, 0, None, 0)
     avg_cpu = _mean([s.cpu_percent for s in samples])
     avg_core = _mean([max(s.per_core_percent or [s.cpu_percent]) for s in samples])
     gpu_vals = [s.gpu_percent for s in samples if s.gpu_percent is not None]
@@ -49,15 +50,15 @@ def analyze(samples: list[SensorSnapshot]) -> BottleneckResult:
         if avg_cpu >= CPU_BOUND_THRESHOLD or avg_core >= CORE_BOUND_THRESHOLD:
             return BottleneckResult(
                 "CPU",
-                "Sem telemetria de GPU, mas a CPU está saturada.",
+                tr("Sem telemetria de GPU, mas a CPU está saturada."),
                 avg_cpu,
                 avg_core,
                 None,
                 n,
             )
         return BottleneckResult(
-            "Indeterminado",
-            "GPU sem telemetria (suporte completo apenas NVIDIA).",
+            N_("Indeterminado"),
+            tr("GPU sem telemetria neste sistema."),
             avg_cpu,
             avg_core,
             None,
@@ -66,7 +67,7 @@ def analyze(samples: list[SensorSnapshot]) -> BottleneckResult:
     if avg_gpu >= GPU_BOUND_THRESHOLD:
         return BottleneckResult(
             "GPU",
-            f"GPU em {avg_gpu}% de uso médio: ela limita o desempenho.",
+            tr("GPU em {gpu}% de uso médio: ela limita o desempenho.", gpu=avg_gpu),
             avg_cpu,
             avg_core,
             avg_gpu,
@@ -75,15 +76,19 @@ def analyze(samples: list[SensorSnapshot]) -> BottleneckResult:
     if avg_cpu >= CPU_BOUND_THRESHOLD or avg_core >= CORE_BOUND_THRESHOLD:
         return BottleneckResult(
             "CPU",
-            f"GPU em apenas {avg_gpu}% enquanto a CPU (núcleo mais carregado {avg_core}%) está saturada.",
+            tr(
+                "GPU em apenas {gpu}% enquanto a CPU (núcleo mais carregado {core}%) está saturada.",
+                gpu=avg_gpu,
+                core=avg_core,
+            ),
             avg_cpu,
             avg_core,
             avg_gpu,
             n,
         )
     return BottleneckResult(
-        "Equilibrado",
-        "Nenhum componente saturado durante a amostragem.",
+        N_("Equilibrado"),
+        tr("Nenhum componente saturado durante a amostragem."),
         avg_cpu,
         avg_core,
         avg_gpu,

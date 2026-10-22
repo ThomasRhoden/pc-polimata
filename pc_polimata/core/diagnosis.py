@@ -16,7 +16,9 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-SEVERITY_ORDER = {"crítico": 0, "atenção": 1, "info": 2}
+from pc_polimata.i18n import N_, tr
+
+SEVERITY_ORDER = {N_("crítico"): 0, N_("atenção"): 1, N_("info"): 2}
 Transport = Callable[[str, dict, dict, float], dict]
 
 
@@ -33,7 +35,7 @@ class Diagnosis:
     score: int  # 0-100
     llm_analysis: str | None = None
     llm_error: str | None = None
-    source: str = "regras"
+    source: str = N_("regras")
     extra: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -55,16 +57,16 @@ def _rules_temperature(report: dict) -> list[Finding]:
             out.append(
                 Finding(
                     "crítico",
-                    f"{comp} muito quente ({t:.0f} °C)",
-                    "Verifique ventilação, poeira e pasta térmica; há risco de throttling.",
+                    tr("{comp} muito quente ({t:.0f} °C)", comp=comp, t=t),
+                    tr("Verifique ventilação, poeira e pasta térmica; há risco de throttling."),
                 )
             )
         elif t >= 80:
             out.append(
                 Finding(
                     "atenção",
-                    f"{comp} quente ({t:.0f} °C)",
-                    "Temperatura alta sob carga; melhore o fluxo de ar do gabinete.",
+                    tr("{comp} quente ({t:.0f} °C)", comp=comp, t=t),
+                    tr("Temperatura alta sob carga; melhore o fluxo de ar do gabinete."),
                 )
             )
     return out
@@ -78,18 +80,22 @@ def _rules_memory(report: dict) -> list[Finding]:
         out.append(
             Finding(
                 "crítico",
-                f"RAM quase esgotada ({used:.0f}%)",
-                "Feche programas ou considere mais memória; o sistema pode usar swap e travar.",
+                tr("RAM quase esgotada ({used:.0f}%)", used=used),
+                tr("Feche programas ou considere mais memória; o sistema pode usar swap e travar."),
             )
         )
     elif used is not None and used >= 80:
-        out.append(Finding("atenção", f"Uso de RAM alto ({used:.0f}%)", "Monitore programas em segundo plano."))
+        out.append(
+            Finding(
+                "atenção", tr("Uso de RAM alto ({used:.0f}%)", used=used), tr("Monitore programas em segundo plano.")
+            )
+        )
     if total is not None and total < 8:
         out.append(
             Finding(
                 "atenção",
-                f"Pouca RAM instalada ({total} GB)",
-                "8 GB é o mínimo confortável hoje; 16 GB para jogos e desenvolvimento.",
+                tr("Pouca RAM instalada ({total} GB)", total=total),
+                tr("8 GB é o mínimo confortável hoje; 16 GB para jogos e desenvolvimento."),
             )
         )
     return out
@@ -103,27 +109,31 @@ def _rules_disks(report: dict) -> list[Finding]:
             out.append(
                 Finding(
                     "crítico",
-                    f"Disco {d['mountpoint']} cheio ({used:.0f}%)",
-                    "Libere espaço: pouco espaço livre degrada desempenho e atualizações.",
+                    tr("Disco {mount} cheio ({used:.0f}%)", mount=d["mountpoint"], used=used),
+                    tr("Libere espaço: pouco espaço livre degrada desempenho e atualizações."),
                 )
             )
         elif used >= 85:
             out.append(
                 Finding(
                     "atenção",
-                    f"Disco {d['mountpoint']} quase cheio ({used:.0f}%)",
-                    "Considere limpar arquivos temporários ou mover dados.",
+                    tr("Disco {mount} quase cheio ({used:.0f}%)", mount=d["mountpoint"], used=used),
+                    tr("Considere limpar arquivos temporários ou mover dados."),
                 )
             )
     for h in report.get("disk_health", []):
         if h.get("status") == "FALHA":
-            out.append(Finding("crítico", f"SMART reprovado em {h['device']}", "Faça backup imediatamente."))
+            out.append(
+                Finding(
+                    "crítico", tr("SMART reprovado em {device}", device=h["device"]), tr("Faça backup imediatamente.")
+                )
+            )
         elif h.get("status") == "ATENÇÃO":
             out.append(
                 Finding(
                     "atenção",
-                    f"SMART com alertas em {h['device']}",
-                    "Setores realocados ou desgaste alto: planeje a troca e mantenha backup.",
+                    tr("SMART com alertas em {device}", device=h["device"]),
+                    tr("Setores realocados ou desgaste alto: planeje a troca e mantenha backup."),
                 )
             )
     return out
@@ -132,13 +142,13 @@ def _rules_disks(report: dict) -> list[Finding]:
 def _rules_bottleneck(report: dict) -> list[Finding]:
     verdict = (report.get("bottleneck") or {}).get("verdict")
     if verdict == "CPU":
-        return [Finding("info", "Gargalo na CPU", "A GPU está ociosa; um upgrade de CPU traria mais ganho.")]
+        return [Finding("info", tr("Gargalo na CPU"), tr("A GPU está ociosa; um upgrade de CPU traria mais ganho."))]
     if verdict == "GPU":
         return [
             Finding(
                 "info",
-                "GPU é o limitante",
-                "Normal em jogos; reduza a resolução/qualidade ou considere upgrade de GPU.",
+                tr("GPU é o limitante"),
+                tr("Normal em jogos; reduza a resolução/qualidade ou considere upgrade de GPU."),
             )
         ]
     return []
@@ -148,13 +158,15 @@ def _rules_network(report: dict) -> list[Finding]:
     out = []
     for r in report.get("network_latency") or []:
         if r.get("avg_ms") is None:
-            out.append(Finding("atenção", f"Sem conexão com {r['host']}", "Verifique firewall/conexão."))
+            out.append(
+                Finding("atenção", tr("Sem conexão com {host}", host=r["host"]), tr("Verifique firewall/conexão."))
+            )
         elif r["avg_ms"] > 100:
             out.append(
                 Finding(
                     "atenção",
-                    f"Latência alta para {r['host']} ({r['avg_ms']} ms)",
-                    "Prefira cabo a Wi-Fi e verifique downloads em segundo plano.",
+                    tr("Latência alta para {host} ({ms} ms)", host=r["host"], ms=r["avg_ms"]),
+                    tr("Prefira cabo a Wi-Fi e verifique downloads em segundo plano."),
                 )
             )
     return out
@@ -168,7 +180,7 @@ def rule_based(report: dict) -> Diagnosis:
     findings.sort(key=lambda f: SEVERITY_ORDER[f.severity])
     penalty = sum({"crítico": 25, "atenção": 10, "info": 0}[f.severity] for f in findings)
     if not findings:
-        findings = [Finding("info", "Nenhum problema detectado", "Os indicadores estão dentro do esperado.")]
+        findings = [Finding("info", tr("Nenhum problema detectado"), tr("Os indicadores estão dentro do esperado."))]
     return Diagnosis(findings, max(0, 100 - penalty))
 
 
@@ -179,7 +191,7 @@ def redact(report: dict) -> dict:
     return clean
 
 
-SYSTEM_PROMPT = (
+SYSTEM_PROMPT = (  # instrução ao modelo (não é texto de interface); o idioma vai em {lang}
     "Você é um técnico de hardware experiente. Analise o relatório JSON de um PC e responda em "
     "{lang}, em até 10 tópicos curtos: saúde geral, problemas, gargalos e upgrades com melhor "
     "custo-benefício. Não invente dados que não estão no relatório."
@@ -214,7 +226,7 @@ def llm_analysis(
     try:
         return data["choices"][0]["message"]["content"].strip()
     except (KeyError, IndexError, TypeError) as exc:
-        raise ValueError("resposta inesperada do LLM") from exc
+        raise ValueError(tr("resposta inesperada do LLM")) from exc
 
 
 def diagnose(report: dict, api_key: str | None = None, **llm_kwargs: Any) -> Diagnosis:
@@ -223,7 +235,7 @@ def diagnose(report: dict, api_key: str | None = None, **llm_kwargs: Any) -> Dia
         return result
     try:
         result.llm_analysis = llm_analysis(report, api_key, **llm_kwargs)
-        result.source = "regras + LLM"
+        result.source = N_("regras + LLM")
     except (urllib.error.URLError, OSError, ValueError) as exc:
         result.llm_error = str(exc)
     return result

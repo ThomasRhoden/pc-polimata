@@ -9,6 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from pc_polimata.core.sensors import read_cpu_temperature
+from pc_polimata.i18n import tr
 
 
 def _burn(stop_event) -> None:  # pragma: no cover - executa em subprocesso
@@ -51,7 +52,7 @@ class StressResult:
 def check_limits(temp_c: float | None, config: StressConfig) -> str | None:
     """Retorna o motivo de parada se algum limite foi violado."""
     if config.max_temp_c is not None and temp_c is not None and temp_c >= config.max_temp_c:
-        return f"temperatura {temp_c:.0f}°C >= limite {config.max_temp_c:.0f}°C"
+        return tr("temperatura {temp:.0f} °C >= limite {limit:.0f} °C", temp=temp_c, limit=config.max_temp_c)
     return None
 
 
@@ -80,7 +81,7 @@ class StressTest:
         for w in workers:
             w.start()
         start = time.monotonic()
-        reason, max_temp, samples = "duração concluída", None, []
+        reason, max_temp, samples = tr("duração concluída"), None, []
         try:
             while True:
                 elapsed = time.monotonic() - start
@@ -96,7 +97,7 @@ class StressTest:
                 if on_sample:
                     on_sample(sample)
                 if self._user_stop:
-                    reason = "parado pelo usuário"
+                    reason = tr("parado pelo usuário")
                     break
                 if (limit := check_limits(temp, self.config)) is not None:
                     reason = limit

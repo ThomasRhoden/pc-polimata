@@ -12,6 +12,8 @@ import subprocess
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 
+from pc_polimata.i18n import N_, tr
+
 Runner = Callable[[list[str]], str]
 
 
@@ -31,9 +33,9 @@ class DiskHealth:
         if self.passed is None:
             return "n/d"
         if not self.passed:
-            return "FALHA"
+            return N_("FALHA")
         if (self.reallocated_sectors or 0) > 0 or (self.percentage_used or 0) >= 90:
-            return "ATENÇÃO"
+            return N_("ATENÇÃO")
         return "OK"
 
     def to_dict(self) -> dict:
@@ -54,7 +56,7 @@ def parse_smartctl(device: str, output: str) -> DiskHealth:
     try:
         data = json.loads(output)
     except json.JSONDecodeError:
-        return DiskHealth(device, error="saída inválida do smartctl")
+        return DiskHealth(device, error=tr("saída inválida do smartctl"))
     messages = data.get("smartctl", {}).get("messages", [])
     errors = [m.get("string", "") for m in messages if m.get("severity") == "error"]
     health = DiskHealth(device, model=data.get("model_name"))

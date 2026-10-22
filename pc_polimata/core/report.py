@@ -10,26 +10,26 @@ from pathlib import Path
 from typing import Any
 
 from pc_polimata import __version__
-from pc_polimata.i18n import tr
+from pc_polimata.i18n import N_, tr
 
 SECTION_TITLES = {
-    "system": "Sistema",
-    "sensors": "Sensores",
-    "cpu_benchmark": "Benchmark de CPU",
-    "disk_benchmark": "Benchmark de disco",
-    "memory_benchmark": "Benchmark de memória",
-    "stress_test": "Stress test",
-    "bottleneck": "Gargalo",
-    "network_latency": "Latência de rede",
-    "network_download": "Download",
-    "disk_health": "Saúde dos discos (SMART)",
-    "games_estimate": "Jogos (estimativa)",
-    "diagnosis": "Diagnóstico",
-    "drivers": "Drivers",
-    "alerts": "Alertas",
+    "system": N_("Sistema"),
+    "sensors": N_("Sensores"),
+    "cpu_benchmark": N_("Benchmark de CPU"),
+    "disk_benchmark": N_("Benchmark de disco"),
+    "memory_benchmark": N_("Benchmark de memória"),
+    "stress_test": N_("Stress test"),
+    "bottleneck": N_("Gargalo"),
+    "network_latency": N_("Latência de rede"),
+    "network_download": N_("Download"),
+    "disk_health": N_("Saúde dos discos (SMART)"),
+    "games_estimate": N_("Jogos (estimativa)"),
+    "diagnosis": N_("Diagnóstico"),
+    "drivers": N_("Drivers"),
+    "alerts": N_("Alertas"),
 }
 
-PDF_HELP = (
+PDF_HELP = N_(
     "Exportação em PDF requer o pacote reportlab (pip install reportlab). "
     "Alternativa: exporte em HTML, abra no navegador e use Imprimir > Salvar como PDF."
 )

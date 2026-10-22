@@ -15,8 +15,10 @@ import sys
 from dataclasses import dataclass
 from typing import Any
 
+from pc_polimata.i18n import N_
+
 NAMESPACES = ("root\\LibreHardwareMonitor", "root\\OpenHardwareMonitor")
-HINT = "Abra o LibreHardwareMonitor (como administrador) para ver temperaturas no Windows."
+HINT = N_("Abra o LibreHardwareMonitor (como administrador) para ver temperaturas no Windows.")
 
 
 @dataclass

@@ -13,12 +13,14 @@ from dataclasses import asdict, dataclass
 from importlib import resources
 from typing import Any
 
+from pc_polimata.i18n import N_, tr
+
 PRESETS = (
-    (-99, "Abaixo do mínimo"),
-    (-2, "Baixo"),
-    (0, "Médio"),
-    (1, "Alto"),
-    (3, "Ultra"),
+    (-99, N_("Abaixo do mínimo")),
+    (-2, N_("Baixo")),
+    (0, N_("Médio")),
+    (1, N_("Alto")),
+    (3, N_("Ultra")),
 )
 
 
@@ -71,7 +73,7 @@ def estimate(cpu_tier: int | None, gpu_tier: int | None, games: list[dict]) -> l
     out = []
     for g in games:
         if cpu_tier is None or gpu_tier is None:
-            out.append(GameEstimate(g["name"], "Indeterminado", None, None))
+            out.append(GameEstimate(g["name"], N_("Indeterminado"), None, None))
             continue
         cpu_margin, gpu_margin = cpu_tier - g["cpu_tier"], gpu_tier - g["gpu_tier"]
         margin = min(cpu_margin, gpu_margin)
@@ -88,7 +90,7 @@ def estimate_for_system(system: dict, gpu_override: str | None = None, cpu_overr
     cpu_tier = find_tier(cpu_name, data["cpu_tiers"])
     gpu_tier = find_tier(gpu_name, data["gpu_tiers"])
     return {
-        "disclaimer": "Estimativa baseada em tiers aproximados, não é medição real.",
+        "disclaimer": tr("Estimativa baseada em tiers aproximados, não é medição real."),
         "cpu": cpu_name,
         "cpu_tier": cpu_tier,
         "gpu": gpu_name,
