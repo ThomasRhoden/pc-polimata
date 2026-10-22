@@ -81,7 +81,13 @@ def test_cli_tools(tmp_path, monkeypatch, capsys):
     csv.write_text("Application,MsBetweenPresents\ng.exe,10\ng.exe,20\n")
     capsys.readouterr()
     assert cli.main(["--fps-csv", str(csv), "--process", "g.exe"]) == 0
-    assert _json.loads(capsys.readouterr().out)["frames"] == 2
+    assert _json.loads(capsys.readouterr().out)["format"] == "presentmon"
+    mango = tmp_path / "m.csv"
+    mango.write_text("fps,frametime\n50,20\n")
+    assert cli.main(["--fps-csv", str(mango)]) == 0
+    assert _json.loads(capsys.readouterr().out)["format"] == "mangohud"
+    assert cli.follow_fps(str(mango), None, interval=0, max_polls=2) == 0
+    assert capsys.readouterr().out.count("FPS 50") == 2
     assert cli.main(["--fps-csv", str(tmp_path / "nope.csv")]) == 2
     capsys.readouterr()
     assert cli.main(["--plugins"]) == 0

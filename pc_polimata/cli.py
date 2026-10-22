@@ -12,10 +12,10 @@ from pc_polimata.core import (
     diagnosis,
     drivers,
     exchange,
+    fpslog,
     games,
     memory_bench,
     plugins,
-    presentmon,
     report,
     secrets,
     smart,
@@ -46,7 +46,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--list-plugins", action="store_true", help=tr("lista os plugins encontrados e sai"))
     p.add_argument("--export-runs", metavar="FILE", help=tr("exporta as últimas execuções do histórico em JSON"))
     p.add_argument("--compare", nargs=2, metavar=("A", "B"), help=tr("compara dois arquivos exportados"))
-    p.add_argument("--fps-csv", metavar="CSV", help=tr("calcula FPS/1%% low de um CSV do PresentMon"))
+    p.add_argument(
+        "--fps-csv", metavar="CSV", help=tr("calcula FPS/1%% low de um CSV do PresentMon ou do MangoHud (detecta)")
+    )
+    p.add_argument("--follow", action="store_true", help=tr("com --fps-csv, acompanha o arquivo ao vivo (Ctrl+C sai)"))
     p.add_argument("--process", help=tr("com --fps-csv, filtra pelo executável do jogo"))
     p.add_argument("--check-update", action="store_true", help=tr("consulta o GitHub por uma versão mais nova"))
     p.add_argument("--duration", type=float, default=3.0, help=tr("segundos por fase do benchmark"))
@@ -147,13 +150,33 @@ def run_tools(args: argparse.Namespace) -> int:
         result = {"a": a.to_dict(), "b": b.to_dict(), "rows": [r.to_dict() for r in exchange.compare_bundles(a, b)]}
         print(report.to_json(result))
         return 0
+    if args.follow:
+        return follow_fps(args.fps_csv, args.process)
     try:
         with open(args.fps_csv, encoding="utf-8", errors="replace") as fh:
-            stats = presentmon.parse_csv(fh.read(), args.process)
+            kind, stats = fpslog.parse_log(fh.read(), args.process)
     except (OSError, ValueError) as exc:
         print(tr("Falha na medição: {error}", error=exc), file=sys.stderr)
         return 2
-    print(report.to_json(stats.to_dict()))
+    print(report.to_json({"format": kind, **stats.to_dict()}))
+    return 0
+
+
+def follow_fps(path: str, process: str | None, interval: float = 1.0, max_polls: int | None = None) -> int:
+    """Imprime FPS/1% low da janela dos últimos 5 s a cada `interval` segundos."""
+    import time
+
+    tail = fpslog.FrameLogTail(path, process=process)
+    polls = 0
+    try:
+        while max_polls is None or polls < max_polls:
+            stats = tail.poll()
+            print(fpslog.overlay_text(stats) or tr("aguardando frames…"), flush=True)
+            polls += 1
+            if max_polls is None or polls < max_polls:
+                time.sleep(interval)
+    except KeyboardInterrupt:
+        pass
     return 0
 
 
