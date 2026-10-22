@@ -12,7 +12,7 @@ from typing import Any
 import customtkinter as ctk
 import psutil
 
-from pc_polimata.core import report, updates
+from pc_polimata.core import live, plugins, report, updates
 from pc_polimata.core.alerts import AlertMonitor, default_logger
 from pc_polimata.core.history import HistoryStore
 from pc_polimata.core.sensors import SensorSnapshot
@@ -20,9 +20,12 @@ from pc_polimata.core.settings import Settings, load_settings
 from pc_polimata.core.system_info import get_system_info
 from pc_polimata.gui import theme as t
 from pc_polimata.gui.banner import AlertBanner
+from pc_polimata.gui.overlay import Overlay
 from pc_polimata.gui.tabs.benchmark import BenchmarkTab
 from pc_polimata.gui.tabs.bottleneck import BottleneckTab
+from pc_polimata.gui.tabs.compare import CompareTab
 from pc_polimata.gui.tabs.diagnosis import DiagnosisTab
+from pc_polimata.gui.tabs.fps import FpsTab
 from pc_polimata.gui.tabs.games import GamesTab
 from pc_polimata.gui.tabs.history import HistoryTab
 from pc_polimata.gui.tabs.network import NetworkTab
@@ -31,6 +34,7 @@ from pc_polimata.gui.tabs.sensors import SensorsTab
 from pc_polimata.gui.tabs.settings import SettingsTab
 from pc_polimata.gui.tabs.stress import StressTab
 from pc_polimata.gui.tabs.system import SystemTab
+from pc_polimata.gui.tray import TrayIcon
 from pc_polimata.gui.widgets import run_in_thread
 from pc_polimata.i18n import N_, set_language, tr
 
@@ -42,7 +46,9 @@ TABS = (
     (N_("Gargalo"), BottleneckTab),
     (N_("Rede"), NetworkTab),
     (N_("Histórico"), HistoryTab),
+    (N_("Comparar"), CompareTab),
     (N_("Jogos"), GamesTab),
+    (N_("Overlay & FPS"), FpsTab),
     (N_("Diagnóstico IA"), DiagnosisTab),
     (N_("Relatório"), ReportTab),
     (N_("Configurações"), SettingsTab),
@@ -57,7 +63,7 @@ class PolimataApp(ctk.CTk):
         t.apply_accent(self.settings.accent)
         ctk.set_appearance_mode("dark")
         self.title("PC Polimata")
-        self.geometry("1180x720")
+        self.geometry("1440x760")
         self.configure(fg_color=t.BG)
         self.results: dict[str, Any] = {}
         self.system = get_system_info()
@@ -69,6 +75,11 @@ class PolimataApp(ctk.CTk):
         self.alerts = AlertMonitor(self.settings.alert_thresholds(), default_logger())
         self.alert_log: list[str] = []
         self._last_disk_check = 0.0
+        self.monitoring = True
+        self.overlay: Overlay | None = None
+        self.last_fps: str | None = None
+        self.last_snapshot: SensorSnapshot | None = None
+        self.plugins = plugins.PluginHost(plugins.discover(), self.settings.disabled_plugins)
 
         ctk.CTkLabel(self, text="PC Polimata", font=t.FONT_TITLE, text_color=t.GREEN_LIGHT).pack(
             anchor="w", padx=16, pady=(12, 0)
@@ -86,13 +97,71 @@ class PolimataApp(ctk.CTk):
             label = tr(name)
             self.tabs.add(label)
             self.tab_objects[name] = cls(self.tabs.tab(label), self)
+        self._add_plugin_tabs()
         self.banner.attach_before(self.tabs)
+        self.tray = TrayIcon(
+            {
+                "toggle_window": self.toggle_window,
+                "toggle_monitoring": self.toggle_monitoring,
+                "toggle_overlay": self.toggle_overlay,
+                "quit": self.destroy,
+            },
+            lambda: self.monitoring,
+        )
+        self.tray_active = self.settings.tray_icon and self.tray.start()
+        if self.tray_active:
+            self.protocol("WM_DELETE_WINDOW", self.withdraw)  # fechar = minimizar para a bandeja
+            self.after(200, self._poll_tray)
         if self.settings.check_updates:
             self.after(1500, self.check_updates)
 
+    # ---------- plugins ----------
+    def _add_plugin_tabs(self) -> None:
+        for record in self.plugins.enabled():
+            if not record.has_tab:
+                continue
+            label = f"🔌 {record.name}"
+            self.tabs.add(label)
+            error = self.plugins.create_tab(record, self.tabs.tab(label), self)
+            if error:
+                ctk.CTkLabel(
+                    self.tabs.tab(label),
+                    text=tr("O plugin falhou ao montar a aba: {error}", error=error),
+                    text_color=t.DANGER,
+                ).pack(padx=16, pady=16)
+
+    # ---------- bandeja / overlay ----------
+    def _poll_tray(self) -> None:
+        self.tray.drain()
+        self.after(200, self._poll_tray)
+
+    def toggle_window(self) -> None:
+        if self.state() == "withdrawn":
+            self.deiconify()
+            self.lift()
+        else:
+            self.withdraw()
+
+    def toggle_monitoring(self) -> None:
+        self.monitoring = not self.monitoring
+
+    def toggle_overlay(self) -> None:
+        if self.overlay is not None:
+            self.overlay.destroy()
+            self.overlay = None
+            return
+        self.overlay = Overlay(self)
+        if self.last_snapshot is not None:
+            self.overlay.update_snapshot(self.last_snapshot, self.last_fps)
+
     # ---------- alertas ----------
     def on_snapshot(self, snap: SensorSnapshot) -> None:
-        """Chamado pela aba Sensores a cada leitura; dispara alertas novos."""
+        """Chamado pela aba Sensores a cada leitura; dispara alertas e atualiza overlay/bandeja."""
+        self.last_snapshot = snap
+        if self.overlay is not None:
+            self.overlay.update_snapshot(snap, self.last_fps)
+        if self.tray_active:
+            self.tray.set_tooltip(live.tray_tooltip(snap, self.settings.temperature_unit, self.monitoring))
         disks: dict[str, float] = {}
         if time.monotonic() - self._last_disk_check > 60:  # uso de disco muda devagar
             self._last_disk_check = time.monotonic()
@@ -139,6 +208,7 @@ class PolimataApp(ctk.CTk):
                 history_tab.refresh()
 
     def destroy(self) -> None:
+        self.tray.stop()
         if self.history is not None:
             self.history.close()
         super().destroy()
@@ -149,6 +219,7 @@ class PolimataApp(ctk.CTk):
             self.system,
             sensors=sensors.to_dict() if sensors else None,
             alerts=self.alert_log or None,
+            plugins={n: r.to_dict() for n, r in self.plugins.collect_all().items()} or None,
             **self.results,
         )
 

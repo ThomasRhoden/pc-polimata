@@ -40,6 +40,9 @@ class SensorsTab:
         master.after(300, self.refresh)
 
     def refresh(self) -> None:
+        if not self.app.monitoring:  # pausado pela bandeja: mantém o laço, não lê sensores
+            self.extra.after(self.app.settings.refresh_ms, self.refresh)
+            return
         snap = self.last = self.monitor.read()
         self.history.append(cpu=snap.cpu_percent, ram=snap.ram_percent, gpu=snap.gpu_percent)
         for key, pct in (("cpu", snap.cpu_percent), ("ram", snap.ram_percent), ("gpu", snap.gpu_percent)):
