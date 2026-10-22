@@ -5,6 +5,21 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.4.0] - 2026-10-22
+
+### Adicionado
+- **Sistema de plugins** (#13): protocolo tipado `Plugin` (`name`, `version`, `collect()`, `create_tab()` opcional), descoberta por entry points (`pc_polimata.plugins`) e pela pasta local `<config>/plugins`, `PluginHost` que isola falhas (um plugin com erro não derruba o app), seção **Plugins** em Configurações para habilitar/desabilitar, plugins de exemplo **uptime** (com aba) e **battery** (carga e saúde via sysfs), `--plugins`/`--list-plugins` na CLI e `docs/PLUGINS.md`.
+- **Ícone na bandeja** (#12) via `pystray` + Pillow (extra `[tray]`): mostrar/ocultar janela, tooltip com CPU/temperatura, pausar/retomar monitoramento, overlay e sair. Fechar a janela minimiza para a bandeja. Desativado automaticamente sem as dependências, sem display ou sem gerenciador de bandeja (X11).
+- **Overlay** sempre visível e semitransparente com CPU/GPU/RAM/temperaturas (canto, tamanho e opacidade configuráveis; arrastável) e **FPS via PresentMon** no Windows: FPS médio, 1% low, frametime médio/p99/máximo; `--fps-csv` analisa um CSV existente (#11). Limitações em `docs/OVERLAY.md`.
+- Aba **Comparar**: exporta as últimas execuções deste PC em JSON (formato versionado, sem hostname) e compara dois PCs/execuções lado a lado, com vencedor por métrica e empate abaixo de 2 %; `--export-runs` e `--compare A B` na CLI; arquivos de exemplo em `docs/examples/`.
+
+### Alterado
+- Janela padrão maior (1440×760) para caber as novas abas.
+- Salvar em Configurações preserva campos que não estão no formulário.
+
+### Qualidade
+- 373 testes; cobertura de 93 % (núcleo + CLI); `mypy --strict` também em `pc_polimata/plugins`.
+
 ## [0.3.0] - 2026-10-21
 
 ### Adicionado
@@ -58,7 +73,8 @@ Primeira versão pública.
 - CLI headless `python -m pc_polimata --report [--benchmark] [-o arquivo.json|.html]`.
 - Exportação JSON/HTML, testes pytest, ruff, licença MIT.
 
-[Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.3.0...HEAD
+[Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ThomasRhoden/pc-polimata/releases/tag/v0.1.0

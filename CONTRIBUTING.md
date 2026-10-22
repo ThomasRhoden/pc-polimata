@@ -8,7 +8,7 @@ Obrigado pelo interesse! Este é um projeto de portfólio, mas issues e PRs são
 git clone https://github.com/ThomasRhoden/pc-polimata.git
 cd pc-polimata
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,memory,pdf]"
+pip install -e ".[dev,memory,pdf,tray]"
 ```
 
 ## Antes de abrir um PR

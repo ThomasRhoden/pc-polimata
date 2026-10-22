@@ -3,7 +3,7 @@
 [![Release](https://img.shields.io/github/v/release/ThomasRhoden/pc-polimata)](https://github.com/ThomasRhoden/pc-polimata/releases)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3f6b3a)
 ![License](https://img.shields.io/badge/license-MIT-7a5a3a)
-![Coverage](https://img.shields.io/badge/coverage-91%25-3f6b3a)
+![Coverage](https://img.shields.io/badge/coverage-93%25-3f6b3a)
 ![mypy](https://img.shields.io/badge/mypy-strict%20(core)-7a5a3a)
 ![i18n](https://img.shields.io/badge/i18n-PT%20%7C%20EN-3f6b3a)
 
@@ -23,11 +23,17 @@ ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são pr�
 | **Stress test** | Carga em todos os núcleos com duração, limite de temperatura e botão de parada segura |
 | **Gargalo** | Amostra 30/45/60 s durante uma carga real e indica se CPU ou GPU é o limitante |
 | **Rede** | Latência TCP a 1.1.1.1 e 8.8.8.8 (sem admin), interfaces locais e teste de download com timeout |
+| **Comparar** | Exporta as execuções deste PC em JSON e compara **dois PCs/execuções lado a lado** (vencedor por métrica) |
 | **Histórico** | Toda execução de benchmark salva em **SQLite**; comparação com a anterior e gráfico de evolução |
 | **Jogos** | **Estimativa** do preset provável em 19 jogos populares a partir de tiers de CPU/GPU (não é medição) |
+| **Overlay & FPS** | **Overlay** sempre visível (CPU/GPU/RAM/temps; canto, tamanho e opacidade) e **FPS / 1% low / frametime** via PresentMon no Windows |
 | **Diagnóstico IA** | Regras offline com nota de saúde 0–100 e dicas; análise opcional por **LLM** (API compatível com OpenAI) |
 | **Relatório** | Exporta tudo para JSON, HTML (tema verde/marrom) ou **PDF** |
-| **Configurações** | Idioma PT/EN, tema, °C/°F, intervalo, **limites de alerta**, verificação de atualização (opt-in) e LLM |
+| **Configurações** | Idioma PT/EN, tema, °C/°F, intervalo, **limites de alerta**, verificação de atualização (opt-in), overlay, bandeja, **plugins** e LLM |
+| **🔌 Plugins** | Abas e dados extras de plugins (entry points ou pasta local); exemplos: uptime e bateria — ver [docs/PLUGINS.md](docs/PLUGINS.md) |
+
+**Bandeja do sistema** (opcional, `pip install "pc-polimata[tray]"`): mostrar/ocultar janela, tooltip com CPU e
+temperatura, pausar o monitoramento, ligar o overlay e sair. Sem pystray/Pillow ou sem bandeja, o app segue normal.
 
 **Alertas:** quando CPU/GPU, RAM ou disco passam do limite configurado, uma faixa não bloqueante aparece no topo
 (sem repetir enquanto o valor continua alto) e o evento vai para `alerts.log`.
@@ -35,10 +41,12 @@ ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são pr�
 ![Alerta (leitura simulada)](docs/screenshot_alerta.png)
 
 <table>
+<tr><td><img src="docs/screenshot_overlay_fps.png" alt="Overlay e FPS"></td><td><img src="docs/screenshot_comparar.png" alt="Comparar"></td></tr>
+<tr><td><img src="docs/screenshot_plugins.png" alt="Plugins em Configurações"></td><td><img src="docs/screenshot_uptime.png" alt="Aba de plugin"></td></tr>
 <tr><td><img src="docs/screenshot_historico.png" alt="Histórico"></td><td><img src="docs/screenshot_jogos.png" alt="Jogos"></td></tr>
 <tr><td><img src="docs/screenshot_sistema.png" alt="Sistema"></td><td><img src="docs/screenshot_rede.png" alt="Rede"></td></tr>
 <tr><td><img src="docs/screenshot_diagnostico_ia.png" alt="Diagnóstico"></td><td><img src="docs/screenshot_configuracoes.png" alt="Configurações"></td></tr>
-<tr><td><img src="docs/en_jogos.png" alt="Interface em inglês"></td><td><img src="docs/report_html.png" alt="Relatório HTML"></td></tr>
+<tr><td><img src="docs/en_comparar.png" alt="Interface em inglês"></td><td><img src="docs/report_html.png" alt="Relatório HTML"></td></tr>
 </table>
 
 ### Suporte de hardware
@@ -62,6 +70,11 @@ pc-polimata --smart --games --diagnose -o r.json       # SMART, jogos e diagnós
 pc-polimata --diagnose --llm                           # + análise por LLM (requer chave)
 pc-polimata --drivers --report -o relatorio.pdf        # PDF (requer reportlab)
 pc-polimata --lang en --check-update                   # em inglês; verifica nova versão
+pc-polimata --list-plugins                             # plugins encontrados
+pc-polimata --plugins -o r.json                        # inclui dados dos plugins
+pc-polimata --export-runs meu_pc.json                  # exporta as últimas execuções
+pc-polimata --compare meu_pc.json outro_pc.json        # compara dois PCs (JSON)
+pc-polimata --fps-csv captura.csv --process game.exe   # FPS/1% low de um CSV do PresentMon
 ```
 
 `python -m pc_polimata ...` funciona igual, sem instalar.
@@ -93,9 +106,14 @@ pc_polimata/
 │   ├── alerts.py         # limites + log rotativo
 │   ├── drivers.py        # versão/idade do driver de vídeo
 │   ├── updates.py        # nova versão via API do GitHub (opt-in)
+│   ├── plugins.py        # descoberta (entry points + pasta) e PluginHost com isolamento de falhas
+│   ├── presentmon.py     # FPS/1% low/frametime a partir do CSV do PresentMon
+│   ├── exchange.py       # exportar/importar execuções e comparar máquinas
+│   ├── live.py           # texto/geometria do overlay e tooltip da bandeja
 │   └── report.py         # JSON / HTML / PDF
+├── plugins/              # plugins de exemplo: uptime, battery
 ├── data/hardware_tiers.json
-├── gui/                  # customtkinter: app.py, widgets.py (LineChart em Canvas), tabs/
+├── gui/                  # customtkinter: app.py, overlay.py, tray.py, widgets.py, tabs/
 ├── i18n.py               # PT (padrão) / EN
 └── cli.py
 ```
@@ -131,15 +149,15 @@ python -m pc_polimata
 Testes e lint:
 
 ```bash
-pip install -e ".[dev,pdf,memory]"
+pip install -e ".[dev,pdf,memory,tray]"
 ruff check .
-mypy                       # modo strict em pc_polimata/core e i18n
-pytest --cov               # cobertura (núcleo + CLI): 91 %
+mypy                       # modo strict em core, plugins e i18n
+pytest --cov               # cobertura (núcleo + CLI): 93 %
 xvfb-run -a pytest tests/test_gui_smoke.py   # smoke test da GUI (PT e EN) no Linux sem monitor
 ```
 
-Qualidade atual (v0.3.0): **291 testes** passando (incluindo a checagem de tradução EN que varre o código),
-**91 % de cobertura** no núcleo e na CLI e **mypy strict** sem erros no núcleo.
+Qualidade atual (v0.4.0): **373 testes** passando (incluindo a checagem de tradução EN que varre o código),
+**93 % de cobertura** no núcleo e na CLI e **mypy strict** sem erros no núcleo e nos plugins.
 
 ## Privacidade
 
@@ -156,7 +174,10 @@ Configurações, histórico e chave ficam no diretório de configuração do usu
 - **Temperatura no Windows** depende do LibreHardwareMonitor aberto; sem ele aparece "n/d" (com uma dica) e o limite de temperatura do stress test fica inativo.
 - **Scores** de CPU/memória são próprios do PC Polimata e não comparáveis a Cinebench/AIDA64. A latência de memória medida em Python inclui overhead do interpretador (é um teto).
 - **Leitura de disco** pode ser inflada pelo cache do SO.
-- **Gargalo** e **Jogos** são heurísticas/estimativas, não medem FPS.
+- **Gargalo** e **Jogos** são heurísticas/estimativas. FPS real só com o PresentMon no Windows (admin).
+- **Overlay** é uma janela comum por cima das outras: funciona com jogos em janela/sem borda, **não** em tela cheia exclusiva. Detalhes em [docs/OVERLAY.md](docs/OVERLAY.md).
+- **Bandeja**: no Linux exige um gerenciador de bandeja (X11) ou AppIndicator; não há bandeja no macOS.
+- **Plugins** são isolados contra falhas, não contra código malicioso: rodam com as permissões do app.
 - **Latência** é o tempo de `connect()` TCP, não ICMP; proxies/VPNs transparentes podem distorcer o valor.
 - **SMART** exige smartmontools e privilégios de administrador/root.
 
@@ -183,15 +204,20 @@ disk and memory benchmarks; stress test with temperature limit and safe stop; CP
 heuristic; network tab (TCP latency, interfaces, download test); SQLite benchmark history with run
 comparison; game performance **estimates** from CPU/GPU tiers; health diagnosis with offline rules and an
 optional LLM (any OpenAI-compatible API); configurable alerts (non-blocking banner + log file); opt-in update
-check; JSON/HTML/PDF reports; fully translated PT/EN UI. Headless CLI included
-(`pc-polimata --report`, `--benchmark`, `--memory`, `--smart`, `--games`, `--diagnose [--llm]`).
+check; JSON/HTML/PDF reports; fully translated PT/EN UI; **plugin system** (entry points + local folder,
+failure-isolated, enable/disable in Settings, example uptime/battery plugins — [docs/PLUGINS.md](docs/PLUGINS.md));
+optional **system tray icon**; always-on-top **overlay** with live CPU/GPU/RAM/temps and **FPS / 1% low /
+frametime via PresentMon** on Windows ([docs/OVERLAY.md](docs/OVERLAY.md)); **Compare** tab to export runs as JSON
+and compare two machines side by side. Headless CLI included
+(`pc-polimata --report`, `--benchmark`, `--memory`, `--smart`, `--games`, `--diagnose [--llm]`, `--plugins`,
+`--export-runs`, `--compare A B`, `--fps-csv`).
 
 **Architecture:** GUI-free `pc_polimata/core` (pytest-covered, dependency-injected for hardware/network
 fakes) + `customtkinter` GUI + `argparse` CLI. Every optional backend degrades gracefully to "n/a".
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-**Quality:** 291 tests (including an AST-based EN translation check), 91 % coverage on core + CLI, strict mypy on
-the core.
+**Quality:** 373 tests (including an AST-based EN translation check), 93 % coverage on core + CLI, strict mypy on
+the core and plugins.
 
 **Run:** `pipx install git+https://github.com/ThomasRhoden/pc-polimata.git && pc-polimata`, or
 `pip install -r requirements.txt && python -m pc_polimata`. Tests: `ruff check . && pytest`.
@@ -202,7 +228,9 @@ performance counters;
 Windows temperatures require LibreHardwareMonitor running; SMART requires smartctl with admin/root.
 
 **Limitations:** scores are PC Polimata-specific; game estimates and bottleneck analysis are heuristics;
-latency is TCP-connect time.
+latency is TCP-connect time; the overlay is a normal topmost window (windowed/borderless games only, not
+exclusive fullscreen); FPS capture needs PresentMon + admin on Windows; plugins are failure-isolated, not
+security-sandboxed.
 
 **AI assistance:** built with AI assistance — I use AI to speed up development, and I reviewed,
 ran and validated the code myself.
