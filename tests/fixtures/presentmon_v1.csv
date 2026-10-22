@@ -1,0 +1,6 @@
+Application,ProcessID,SwapChainAddress,Runtime,SyncInterval,PresentFlags,Dropped,TimeInSeconds,MsBetweenPresents,MsBetweenDisplayChange
+game.exe,1234,0x1,DXGI,0,0,0,0.0000,16.667,16.667
+game.exe,1234,0x1,DXGI,0,0,0,0.0167,16.667,16.667
+dwm.exe,99,0x2,DXGI,1,0,0,0.0170,8.000,8.000
+game.exe,1234,0x1,DXGI,0,0,0,0.0333,NA,16.667
+game.exe,1234,0x1,DXGI,0,0,0,0.0833,50.000,50.000
