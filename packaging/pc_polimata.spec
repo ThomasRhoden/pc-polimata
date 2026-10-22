@@ -16,7 +16,7 @@ a = Analysis(
     [str(ROOT / "packaging" / "launcher.py")],
     pathex=[str(ROOT)],
     datas=datas,
-    hiddenimports=["pynvml", "wmi", "cpuinfo"],
+    hiddenimports=["pynvml", "wmi", "cpuinfo", "pystray", "pc_polimata.plugins.uptime", "pc_polimata.plugins.battery"],
     excludes=["pytest", "ruff"],
 )
 pyz = PYZ(a.pure)
