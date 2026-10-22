@@ -82,11 +82,13 @@ class HistoryStore:
                 "INSERT INTO runs (kind, created_at, metrics, hardware, note) VALUES (?, ?, ?, ?, ?)",
                 (kind, ts, json.dumps(metrics), json.dumps(hardware or {}), note),
             )
-            return int(cur.lastrowid)
+            if cur.lastrowid is None:  # pragma: no cover - sqlite sempre define após INSERT
+                raise RuntimeError("insert failed")
+            return cur.lastrowid
 
     def list_runs(self, kind: str | None = None, limit: int = 50) -> list[Run]:
         query = "SELECT * FROM runs"
-        params: tuple = ()
+        params: tuple[Any, ...] = ()
         if kind:
             query += " WHERE kind = ?"
             params = (kind,)

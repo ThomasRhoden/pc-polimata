@@ -11,6 +11,7 @@ import shutil
 import subprocess
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
+from typing import Any
 
 from pc_polimata.i18n import N_, tr
 
@@ -38,7 +39,7 @@ class DiskHealth:
             return N_("ATENÇÃO")
         return "OK"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "status": self.status}
 
 

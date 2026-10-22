@@ -12,6 +12,7 @@ import time
 import urllib.request
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
+from typing import Any
 
 import psutil
 
@@ -40,7 +41,7 @@ class LatencyResult:
             return None
         return round(statistics.pstdev(self.samples_ms), 1)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "avg_ms": self.avg_ms, "min_ms": self.min_ms, "jitter_ms": self.jitter_ms}
 
 
@@ -57,7 +58,7 @@ class ThroughputResult:
         """Megabits por segundo."""
         return round(self.bytes_received * 8 / 1e6 / self.seconds, 2) if self.seconds > 0 else 0.0
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "mbps": self.mbps}
 
 
@@ -82,11 +83,11 @@ def tcp_latency(
     return LatencyResult(host, port, samples, failures)
 
 
-def measure_latencies(targets=DEFAULT_TARGETS, **kwargs) -> list[LatencyResult]:
+def measure_latencies(targets: tuple[tuple[str, int], ...] = DEFAULT_TARGETS, **kwargs: Any) -> list[LatencyResult]:
     return [tcp_latency(h, p, **kwargs) for h, p in targets]
 
 
-def list_interfaces() -> list[dict]:
+def list_interfaces() -> list[dict[str, Any]]:
     stats = psutil.net_if_stats()
     out = []
     for name, addrs in psutil.net_if_addrs().items():
@@ -107,7 +108,7 @@ def download_throughput(
     url: str = DEFAULT_DOWNLOAD_URL,
     timeout: float = 10.0,
     max_bytes: int = 25_000_000,
-    opener: Callable[..., object] = urllib.request.urlopen,
+    opener: Callable[..., Any] = urllib.request.urlopen,
     clock: Callable[[], float] = time.perf_counter,
     chunk_size: int = 64 * 1024,
 ) -> ThroughputResult:

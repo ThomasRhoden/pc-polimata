@@ -19,7 +19,7 @@ from typing import Any
 from pc_polimata.i18n import N_, tr
 
 SEVERITY_ORDER = {N_("crítico"): 0, N_("atenção"): 1, N_("info"): 2}
-Transport = Callable[[str, dict, dict, float], dict]
+Transport = Callable[[str, dict[str, Any], dict[str, Any], float], dict[str, Any]]
 
 
 @dataclass
@@ -36,20 +36,20 @@ class Diagnosis:
     llm_analysis: str | None = None
     llm_error: str | None = None
     source: str = N_("regras")
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
-def _rules_temperature(report: dict) -> list[Finding]:
+def _rules_temperature(report: dict[str, Any]) -> list[Finding]:
     out = []
     sensors = report.get("sensors") or {}
     stress = report.get("stress_test") or {}
     temps = {"CPU": [sensors.get("cpu_temp_c"), stress.get("max_temp_c")], "GPU": [sensors.get("gpu_temp_c")]}
     temps["GPU"] += [g.get("temperature_c") for g in report.get("system", {}).get("gpus", [])]
-    for comp, values in temps.items():
-        values = [v for v in values if v is not None]
+    for comp, raw in temps.items():
+        values = [float(v) for v in raw if v is not None]
         if not values:
             continue
         t = max(values)
@@ -72,7 +72,7 @@ def _rules_temperature(report: dict) -> list[Finding]:
     return out
 
 
-def _rules_memory(report: dict) -> list[Finding]:
+def _rules_memory(report: dict[str, Any]) -> list[Finding]:
     mem = report.get("system", {}).get("memory", {})
     out = []
     used, total = mem.get("used_percent"), mem.get("total_gb")
@@ -101,7 +101,7 @@ def _rules_memory(report: dict) -> list[Finding]:
     return out
 
 
-def _rules_disks(report: dict) -> list[Finding]:
+def _rules_disks(report: dict[str, Any]) -> list[Finding]:
     out = []
     for d in report.get("system", {}).get("disks", []):
         used = d.get("used_percent", 0)
@@ -139,7 +139,7 @@ def _rules_disks(report: dict) -> list[Finding]:
     return out
 
 
-def _rules_bottleneck(report: dict) -> list[Finding]:
+def _rules_bottleneck(report: dict[str, Any]) -> list[Finding]:
     verdict = (report.get("bottleneck") or {}).get("verdict")
     if verdict == "CPU":
         return [Finding("info", tr("Gargalo na CPU"), tr("A GPU está ociosa; um upgrade de CPU traria mais ganho."))]
@@ -154,7 +154,7 @@ def _rules_bottleneck(report: dict) -> list[Finding]:
     return []
 
 
-def _rules_network(report: dict) -> list[Finding]:
+def _rules_network(report: dict[str, Any]) -> list[Finding]:
     out = []
     for r in report.get("network_latency") or []:
         if r.get("avg_ms") is None:
@@ -175,7 +175,7 @@ def _rules_network(report: dict) -> list[Finding]:
 RULES = (_rules_temperature, _rules_memory, _rules_disks, _rules_bottleneck, _rules_network)
 
 
-def rule_based(report: dict) -> Diagnosis:
+def rule_based(report: dict[str, Any]) -> Diagnosis:
     findings = [f for rule in RULES for f in rule(report)]
     findings.sort(key=lambda f: SEVERITY_ORDER[f.severity])
     penalty = sum({"crítico": 25, "atenção": 10, "info": 0}[f.severity] for f in findings)
@@ -184,7 +184,7 @@ def rule_based(report: dict) -> Diagnosis:
     return Diagnosis(findings, max(0, 100 - penalty))
 
 
-def redact(report: dict) -> dict:
+def redact(report: dict[str, Any]) -> dict[str, Any]:
     """Remove dados pessoais antes de enviar a um serviço externo."""
     clean = copy.deepcopy(report)
     clean.get("system", {}).get("os", {}).pop("hostname", None)
@@ -198,14 +198,15 @@ SYSTEM_PROMPT = (  # instrução ao modelo (não é texto de interface); o idiom
 )
 
 
-def _urllib_transport(url: str, headers: dict, payload: dict, timeout: float) -> dict:
+def _urllib_transport(url: str, headers: dict[str, Any], payload: dict[str, Any], timeout: float) -> dict[str, Any]:
     req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode())
+        data: dict[str, Any] = json.loads(resp.read().decode())
+    return data
 
 
 def llm_analysis(
-    report: dict,
+    report: dict[str, Any],
     api_key: str,
     base_url: str = "https://api.openai.com/v1",
     model: str = "gpt-4o-mini",
@@ -224,12 +225,12 @@ def llm_analysis(
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     data = transport(base_url.rstrip("/") + "/chat/completions", headers, payload, timeout)
     try:
-        return data["choices"][0]["message"]["content"].strip()
+        return str(data["choices"][0]["message"]["content"]).strip()
     except (KeyError, IndexError, TypeError) as exc:
         raise ValueError(tr("resposta inesperada do LLM")) from exc
 
 
-def diagnose(report: dict, api_key: str | None = None, **llm_kwargs: Any) -> Diagnosis:
+def diagnose(report: dict[str, Any], api_key: str | None = None, **llm_kwargs: Any) -> Diagnosis:
     result = rule_based(report)
     if not api_key:
         return result

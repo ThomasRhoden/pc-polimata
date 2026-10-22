@@ -13,6 +13,7 @@ import os
 import tempfile
 import time
 from dataclasses import asdict, dataclass
+from typing import Any
 
 WORKLOAD_SIZE = 20_000
 SCORE_SCALE = 100
@@ -31,7 +32,7 @@ class CPUBenchmarkResult:
             return 0.0
         return round(self.multi_core_score / self.single_core_score, 2)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "scaling": self.scaling}
 
 
@@ -41,7 +42,7 @@ class DiskBenchmarkResult:
     read_mb_s: float
     size_mb: int
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 

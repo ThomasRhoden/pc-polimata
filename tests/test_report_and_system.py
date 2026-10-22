@@ -46,11 +46,9 @@ def test_cli_full_headless(tmp_path, monkeypatch):
     assert {"cpu_benchmark", "memory_benchmark", "games_estimate", "diagnosis", "disk_health"} <= set(data)
     from pc_polimata.core.history import HistoryStore
 
-    assert {r.kind for r in HistoryStore(tmp_path / "pc-polimata" / "history.sqlite3").list_runs()} == {
-        "cpu",
-        "disk",
-        "memory",
-    }
+    store = HistoryStore(tmp_path / "pc-polimata" / "history.sqlite3")
+    assert {r.kind for r in store.list_runs()} == {"cpu", "disk", "memory"}
+    store.close()
 
 
 def test_html_template_tables_and_summary():

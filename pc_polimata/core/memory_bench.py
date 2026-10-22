@@ -12,6 +12,7 @@ from __future__ import annotations
 import random
 import time
 from dataclasses import asdict, dataclass
+from typing import Any
 
 
 @dataclass
@@ -21,7 +22,7 @@ class MemoryBenchmarkResult:
     size_mb: int
     backend: str
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 

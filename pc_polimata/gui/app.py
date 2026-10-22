@@ -138,6 +138,11 @@ class PolimataApp(ctk.CTk):
             if history_tab is not None:
                 history_tab.refresh()
 
+    def destroy(self) -> None:
+        if self.history is not None:
+            self.history.close()
+        super().destroy()
+
     def build_report(self) -> dict[str, Any]:
         sensors = getattr(self.tab_objects.get("Sensores"), "last", None)
         return report.build_report(

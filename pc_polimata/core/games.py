@@ -31,7 +31,7 @@ class GameEstimate:
     margin: int | None
     limited_by: str | None  # "CPU", "GPU" ou None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -43,7 +43,8 @@ def normalize(name: str) -> str:
 
 def load_tiers() -> dict[str, Any]:
     text = resources.files("pc_polimata.data").joinpath("hardware_tiers.json").read_text(encoding="utf-8")
-    return json.loads(text)
+    data: dict[str, Any] = json.loads(text)
+    return data
 
 
 def find_tier(name: str | None, tiers: dict[str, list[str]]) -> int | None:
@@ -69,7 +70,7 @@ def preset_for(margin: int) -> str:
     return label
 
 
-def estimate(cpu_tier: int | None, gpu_tier: int | None, games: list[dict]) -> list[GameEstimate]:
+def estimate(cpu_tier: int | None, gpu_tier: int | None, games: list[dict[str, Any]]) -> list[GameEstimate]:
     out = []
     for g in games:
         if cpu_tier is None or gpu_tier is None:
@@ -82,7 +83,9 @@ def estimate(cpu_tier: int | None, gpu_tier: int | None, games: list[dict]) -> l
     return out
 
 
-def estimate_for_system(system: dict, gpu_override: str | None = None, cpu_override: str | None = None) -> dict:
+def estimate_for_system(
+    system: dict[str, Any], gpu_override: str | None = None, cpu_override: str | None = None
+) -> dict[str, Any]:
     data = load_tiers()
     cpu_name = cpu_override or system.get("cpu", {}).get("name")
     gpus = system.get("gpus") or []

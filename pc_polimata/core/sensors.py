@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import time
 from dataclasses import asdict, dataclass, field
+from typing import Any
 
 import psutil
 
@@ -24,9 +25,9 @@ class SensorSnapshot:
     cpu_temp_c: float | None = None
     gpu_percent: float | None = None
     gpu_temp_c: float | None = None
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -46,7 +47,7 @@ def read_cpu_temperature() -> float | None:
     for key in _CPU_SENSOR_KEYS:
         entries = temps.get(key)
         if entries:
-            return max(e.current for e in entries)
+            return float(max(e.current for e in entries))
     return None
 
 

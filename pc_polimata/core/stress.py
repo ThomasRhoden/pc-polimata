@@ -7,12 +7,13 @@ import os
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from pc_polimata.core.sensors import read_cpu_temperature
 from pc_polimata.i18n import tr
 
 
-def _burn(stop_event) -> None:  # pragma: no cover - executa em subprocesso
+def _burn(stop_event: Any) -> None:  # pragma: no cover - executa em subprocesso
     x = 0.0001
     while not stop_event.is_set():
         for _ in range(50_000):
@@ -38,9 +39,9 @@ class StressResult:
     elapsed_s: float
     stop_reason: str
     max_temp_c: float | None
-    samples: list[dict]
+    samples: list[dict[str, Any]]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "elapsed_s": self.elapsed_s,
             "stop_reason": self.stop_reason,
@@ -74,7 +75,7 @@ class StressTest:
         self._user_stop = True
         self._stop.set()
 
-    def run(self, on_sample: Callable[[dict], None] | None = None) -> StressResult:
+    def run(self, on_sample: Callable[[dict[str, Any]], None] | None = None) -> StressResult:
         import psutil
 
         workers = [self._ctx.Process(target=_burn, args=(self._stop,), daemon=True) for _ in range(self.config.workers)]

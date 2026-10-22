@@ -29,7 +29,9 @@ def test_persists_across_connections(tmp_path):
     s = HistoryStore(path)
     s.save_run("memory", {"bandwidth_gb_s": 10, "latency_ns": 80})
     s.close()
-    assert len(HistoryStore(path).list_runs("memory")) == 1
+    reopened = HistoryStore(path)
+    assert len(reopened.list_runs("memory")) == 1
+    reopened.close()
 
 
 def test_rejects_unknown_kind(store):

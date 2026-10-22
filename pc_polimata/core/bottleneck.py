@@ -11,6 +11,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
+from typing import Any
 
 from pc_polimata.core.sensors import SensorMonitor, SensorSnapshot
 from pc_polimata.i18n import N_, tr
@@ -29,7 +30,7 @@ class BottleneckResult:
     avg_gpu: float | None
     samples: int
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 

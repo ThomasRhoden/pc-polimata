@@ -13,6 +13,7 @@ import shutil
 import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 DRM_ROOT = Path("/sys/class/drm")
 AMD_VENDOR_ID = "0x1002"
@@ -29,7 +30,7 @@ class GPUStatus:
     source: str = "unknown"
     driver_date: str | None = None  # AAAA-MM-DD, quando o SO informa (Windows/WMI)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -127,7 +128,7 @@ def from_amd_sysfs(root: Path = DRM_ROOT) -> list[GPUStatus]:
     return gpus
 
 
-def _num(card: dict, *names: str) -> float | None:
+def _num(card: dict[str, Any], *names: str) -> float | None:
     for n in names:
         if n in card:
             try:
