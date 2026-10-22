@@ -1,9 +1,10 @@
 # PC Polimata
 
 [![Release](https://img.shields.io/github/v/release/ThomasRhoden/pc-polimata)](https://github.com/ThomasRhoden/pc-polimata/releases)
+[![CI](https://github.com/ThomasRhoden/pc-polimata/actions/workflows/ci.yml/badge.svg)](https://github.com/ThomasRhoden/pc-polimata/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3f6b3a)
 ![License](https://img.shields.io/badge/license-MIT-7a5a3a)
-![Coverage](https://img.shields.io/badge/coverage-93%25-3f6b3a)
+![Coverage](https://img.shields.io/badge/coverage-94%25-3f6b3a)
 ![mypy](https://img.shields.io/badge/mypy-strict%20(core)-7a5a3a)
 ![i18n](https://img.shields.io/badge/i18n-PT%20%7C%20EN-3f6b3a)
 
@@ -26,7 +27,7 @@ ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são pr�
 | **Comparar** | Exporta as execuções deste PC em JSON e compara **dois PCs/execuções lado a lado** (vencedor por métrica) |
 | **Histórico** | Toda execução de benchmark salva em **SQLite**; comparação com a anterior e gráfico de evolução |
 | **Jogos** | **Estimativa** do preset provável em 19 jogos populares a partir de tiers de CPU/GPU (não é medição) |
-| **Overlay & FPS** | **Overlay** sempre visível (CPU/GPU/RAM/temps; canto, tamanho e opacidade) e **FPS / 1% low / frametime** via PresentMon no Windows |
+| **Overlay & FPS** | **Overlay** sempre visível (CPU/GPU/RAM/temps; canto, tamanho e opacidade) com **FPS ao vivo**; **FPS / 1% low / frametime** via PresentMon (Windows) ou MangoHud (Linux) |
 | **Diagnóstico IA** | Regras offline com nota de saúde 0–100 e dicas; análise opcional por **LLM** (API compatível com OpenAI) |
 | **Relatório** | Exporta tudo para JSON, HTML (tema verde/marrom) ou **PDF** |
 | **Configurações** | Idioma PT/EN, tema, °C/°F, intervalo, **limites de alerta**, verificação de atualização (opt-in), overlay, bandeja, **plugins** e LLM |
@@ -36,7 +37,8 @@ ferramentas foi copiado ou descompilado**; todos os algoritmos e scores são pr�
 temperatura, pausar o monitoramento, ligar o overlay e sair. Sem pystray/Pillow ou sem bandeja, o app segue normal.
 
 **Alertas:** quando CPU/GPU, RAM ou disco passam do limite configurado, uma faixa não bloqueante aparece no topo
-(sem repetir enquanto o valor continua alto) e o evento vai para `alerts.log`.
+(sem repetir enquanto o valor continua alto), o evento vai para `alerts.log` e, se houver suporte, sai uma
+**notificação nativa do SO** (toast no Windows, `notify-send` no Linux), limitada a 1 por alerta a cada 5 min.
 
 ![Alerta (leitura simulada)](docs/screenshot_alerta.png)
 
@@ -74,7 +76,8 @@ pc-polimata --list-plugins                             # plugins encontrados
 pc-polimata --plugins -o r.json                        # inclui dados dos plugins
 pc-polimata --export-runs meu_pc.json                  # exporta as últimas execuções
 pc-polimata --compare meu_pc.json outro_pc.json        # compara dois PCs (JSON)
-pc-polimata --fps-csv captura.csv --process game.exe   # FPS/1% low de um CSV do PresentMon
+pc-polimata --fps-csv captura.csv --process game.exe   # FPS/1% low (PresentMon ou MangoHud, detectado)
+pc-polimata --fps-csv ~/mangohud_logs/jogo.csv --follow # FPS ao vivo enquanto o log é gravado
 ```
 
 `python -m pc_polimata ...` funciona igual, sem instalar.
@@ -108,6 +111,8 @@ pc_polimata/
 │   ├── updates.py        # nova versão via API do GitHub (opt-in)
 │   ├── plugins.py        # descoberta (entry points + pasta) e PluginHost com isolamento de falhas
 │   ├── presentmon.py     # FPS/1% low/frametime a partir do CSV do PresentMon
+│   ├── fpslog.py         # MangoHud, detecção de formato e leitura ao vivo do CSV
+│   ├── notify.py         # notificações nativas com limite de frequência
 │   ├── exchange.py       # exportar/importar execuções e comparar máquinas
 │   ├── live.py           # texto/geometria do overlay e tooltip da bandeja
 │   └── report.py         # JSON / HTML / PDF
@@ -144,7 +149,8 @@ python -m pc_polimata
   como administrador e `pip install wmi`.
 - LLM: defina `PC_POLIMATA_API_KEY` (ou `OPENAI_API_KEY`) ou informe a chave na aba Configurações. Qualquer
   endpoint compatível com OpenAI funciona (ex.: Ollama em `http://localhost:11434/v1`).
-- Executável Windows (.exe) e pipx: ver [docs/BUILD.md](docs/BUILD.md).
+- **Executável Windows pronto**: baixe `pc-polimata-<versão>-windows-x64.exe` na página de
+  [releases](https://github.com/ThomasRhoden/pc-polimata/releases) (gerado e testado pelo GitHub Actions). Build manual: [docs/BUILD.md](docs/BUILD.md).
 
 Testes e lint:
 
@@ -152,12 +158,12 @@ Testes e lint:
 pip install -e ".[dev,pdf,memory,tray]"
 ruff check .
 mypy                       # modo strict em core, plugins e i18n
-pytest --cov               # cobertura (núcleo + CLI): 93 %
+pytest --cov               # cobertura (núcleo + CLI): 94 %
 xvfb-run -a pytest tests/test_gui_smoke.py   # smoke test da GUI (PT e EN) no Linux sem monitor
 ```
 
-Qualidade atual (v0.4.0): **373 testes** passando (incluindo a checagem de tradução EN que varre o código),
-**93 % de cobertura** no núcleo e na CLI e **mypy strict** sem erros no núcleo e nos plugins.
+Qualidade atual (v0.5.0): **401 testes** passando (incluindo a checagem de tradução EN que varre o código),
+**94 % de cobertura** no núcleo e na CLI e **mypy strict** sem erros no núcleo e nos plugins.
 
 ## Privacidade
 
@@ -174,7 +180,8 @@ Configurações, histórico e chave ficam no diretório de configuração do usu
 - **Temperatura no Windows** depende do LibreHardwareMonitor aberto; sem ele aparece "n/d" (com uma dica) e o limite de temperatura do stress test fica inativo.
 - **Scores** de CPU/memória são próprios do PC Polimata e não comparáveis a Cinebench/AIDA64. A latência de memória medida em Python inclui overhead do interpretador (é um teto).
 - **Leitura de disco** pode ser inflada pelo cache do SO.
-- **Gargalo** e **Jogos** são heurísticas/estimativas. FPS real só com o PresentMon no Windows (admin).
+- **Gargalo** e **Jogos** são heurísticas/estimativas. FPS real vem do PresentMon (Windows, admin) ou do MangoHud (Linux); o FPS ao vivo tem o atraso de gravação do log (~1–2 s no MangoHud).
+- **Notificações** dependem de um backend do SO (winotify/plyer no Windows, `notify-send` no Linux).
 - **Overlay** é uma janela comum por cima das outras: funciona com jogos em janela/sem borda, **não** em tela cheia exclusiva. Detalhes em [docs/OVERLAY.md](docs/OVERLAY.md).
 - **Bandeja**: no Linux exige um gerenciador de bandeja (X11) ou AppIndicator; não há bandeja no macOS.
 - **Plugins** são isolados contra falhas, não contra código malicioso: rodam com as permissões do app.
@@ -207,16 +214,18 @@ optional LLM (any OpenAI-compatible API); configurable alerts (non-blocking bann
 check; JSON/HTML/PDF reports; fully translated PT/EN UI; **plugin system** (entry points + local folder,
 failure-isolated, enable/disable in Settings, example uptime/battery plugins — [docs/PLUGINS.md](docs/PLUGINS.md));
 optional **system tray icon**; always-on-top **overlay** with live CPU/GPU/RAM/temps and **FPS / 1% low /
-frametime via PresentMon** on Windows ([docs/OVERLAY.md](docs/OVERLAY.md)); **Compare** tab to export runs as JSON
+frametime via PresentMon** on Windows or **MangoHud** on Linux, with **live FPS** in the overlay; native
+desktop **notifications** for alerts (throttled) ([docs/OVERLAY.md](docs/OVERLAY.md)); **Compare** tab to export runs as JSON
 and compare two machines side by side. Headless CLI included
 (`pc-polimata --report`, `--benchmark`, `--memory`, `--smart`, `--games`, `--diagnose [--llm]`, `--plugins`,
-`--export-runs`, `--compare A B`, `--fps-csv`).
+`--export-runs`, `--compare A B`, `--fps-csv [--follow]`). CI on GitHub Actions (Ubuntu + Windows) and a
+ready-to-run Windows `.exe` built and smoke-tested by the release workflow.
 
 **Architecture:** GUI-free `pc_polimata/core` (pytest-covered, dependency-injected for hardware/network
 fakes) + `customtkinter` GUI + `argparse` CLI. Every optional backend degrades gracefully to "n/a".
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-**Quality:** 373 tests (including an AST-based EN translation check), 93 % coverage on core + CLI, strict mypy on
+**Quality:** 401 tests (including an AST-based EN translation check), 94 % coverage on core + CLI, strict mypy on
 the core and plugins.
 
 **Run:** `pipx install git+https://github.com/ThomasRhoden/pc-polimata.git && pc-polimata`, or

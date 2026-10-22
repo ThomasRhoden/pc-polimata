@@ -5,6 +5,18 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.5.0] - 2026-10-22
+
+### Adicionado
+- **Notificações nativas** para alertas (#16): toast do Windows (`winotify`), `notify-send`/libnotify no Linux, `osascript` no macOS e `plyer` como alternativa; limite de 1 notificação por alerta a cada 5 min e 3 por minuto no total; opção em Configurações (mostra o backend detectado).
+- **FPS no Linux via MangoHud** (#14): leitura dos logs CSV do MangoHud; `--fps-csv` detecta automaticamente PresentMon ou MangoHud.
+- **FPS ao vivo no overlay** (#15): leitura incremental do CSV (PresentMon ou MangoHud, ou o mais novo de uma pasta), atualizada a cada 1 s com FPS/1% low/frametime dos últimos 5 s; PresentMon ao vivo no Windows; `--fps-csv ... --follow` na CLI.
+- **CI no GitHub Actions** (#10): ruff, mypy e pytest + cobertura em Ubuntu e Windows (Python 3.10 e 3.12), smoke test da GUI sob xvfb no Linux.
+- **Release automatizado**: ao criar uma tag `v*`, o workflow gera o `.exe` do Windows com PyInstaller (arquivo único e pasta), faz um smoke test (`--version` e `--report`) e anexa os arquivos ao release.
+
+### Alterado
+- O spec do PyInstaller gera também `pc-polimata.exe` com console para a CLI e aceita `PC_POLIMATA_ONEFILE=1` para um executável único.
+
 ## [0.4.0] - 2026-10-22
 
 ### Adicionado
@@ -73,7 +85,8 @@ Primeira versão pública.
 - CLI headless `python -m pc_polimata --report [--benchmark] [-o arquivo.json|.html]`.
 - Exportação JSON/HTML, testes pytest, ruff, licença MIT.
 
-[Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.4.0...HEAD
+[Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.1.0...v0.2.0

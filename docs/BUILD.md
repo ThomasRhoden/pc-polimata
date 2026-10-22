@@ -24,7 +24,15 @@ pip install -e ".[gpu,windows,memory]" pyinstaller
 pyinstaller packaging/pc_polimata.spec --clean
 ```
 
-Saída: `dist\PCPolimata\PCPolimata.exe`. Para distribuir, compacte a pasta `dist\PCPolimata`.
+Saída em `dist\PCPolimata\`: `PCPolimata.exe` (GUI, sem console) e `pc-polimata.exe` (com console, para a CLI:
+`pc-polimata.exe --report -o r.html`). Para distribuir, compacte a pasta `dist\PCPolimata`.
+
+Executável único (mais lento para iniciar): `$env:PC_POLIMATA_ONEFILE=1; pyinstaller packaging/pc_polimata.spec`
+→ `dist\pc-polimata.exe` (sem argumentos abre a GUI).
+
+**Automático:** ao enviar uma tag `v*`, o workflow `.github/workflows/release.yml` faz os dois builds em
+`windows-latest`, roda `pc-polimata.exe --version` e `--report` como smoke test e anexa ao release
+`pc-polimata-<tag>-windows-x64.exe`, `PCPolimata-<tag>-windows-x64.zip` e o relatório do smoke test.
 
 Observações:
 - O spec usa modo pasta (inicia mais rápido e gera menos falsos positivos de antivírus que `--onefile`).

@@ -45,3 +45,37 @@ pc-polimata --fps-csv captura.csv --process game.exe
 não o tempo de GPU por frame; os parâmetros de linha de comando seguem o PresentMon 2.x (a 1.x usa os
 mesmos nomes com um hífen só — rode-a manualmente e use `--fps-csv`). O parser é testado com CSVs de
 exemplo; a captura real não pôde ser testada na VM Linux de desenvolvimento.
+
+## FPS no Linux (MangoHud)
+
+O [MangoHud](https://github.com/flightlessmango/MangoHud) grava logs CSV de frametime.
+
+1. Instale o MangoHud (`sudo apt install mangohud`, `pacman -S mangohud`...).
+2. Rode o jogo com log ativado, por exemplo:
+
+   ```bash
+   MANGOHUD=1 MANGOHUD_CONFIG=output_folder=$HOME/mangohud_logs,autostart_log=1 %command%   # Steam
+   mangohud --dlsym ./jogo                                                                  # nativo
+   ```
+
+   Sem `autostart_log`, inicie/pare o log com **Shift+F2** dentro do jogo.
+3. Depois: `pc-polimata --fps-csv ~/mangohud_logs/jogo_2026-10-22_01-00-00.csv`.
+
+`--fps-csv` **detecta o formato** pelo cabeçalho: PresentMon (`MsBetweenPresents`/`FrameTime`) ou MangoHud
+(linha `fps,frametime,...`, com ou sem a linha `FRAME METRICS` e as especificações no topo). A saída JSON traz
+`"format": "presentmon" | "mangohud"`. Arquivos `*_summary.csv` são ignorados.
+
+## FPS ao vivo no overlay
+
+Aba **Overlay & FPS** → *FPS ao vivo no overlay*:
+
+- **Arquivo CSV…**: acompanha um CSV que outro programa ainda está gravando (PresentMon ou MangoHud);
+- **Pasta do MangoHud…**: segue sempre o CSV mais novo da pasta (o MangoHud cria um arquivo por sessão);
+- **PresentMon ao vivo** (Windows): inicia o PresentMon sem tempo limite para o processo informado.
+
+A cada 1 s o app lê só os bytes novos do arquivo (linhas incompletas esperam a próxima leitura; arquivo
+truncado/recriado reinicia a leitura), calcula FPS médio, 1% low e frametime **dos últimos 5 s** e mostra no
+overlay (`FPS 144  1% 98  6.9 ms`). Na CLI: `pc-polimata --fps-csv arquivo.csv --follow`.
+
+Limitações: o valor tem o atraso do próprio log (o MangoHud grava em lotes, então pode haver 1–2 s de atraso);
+o PresentMon ao vivo precisa de admin; o overlay continua invisível em tela cheia exclusiva.
