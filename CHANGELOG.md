@@ -5,6 +5,16 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.5.1] - 2026-10-22
+
+### Corrigido
+- **Janela de CMD no Windows**: o executável da GUI (pasta e arquivo único) agora é *windowed* (sem console); `nvidia-smi`, `rocm-smi`, `smartctl`, PowerShell e PresentMon rodam com `CREATE_NO_WINDOW`. Sem stdout/stderr (`None`), as saídas vão para `os.devnull` e o log para `pc-polimata.log` na pasta de configuração.
+- **Lentidão da interface**: leitura de sensores (psutil/WMI/GPU) saiu da thread do Tk para uma thread de fundo (com `CoInitialize` para WMI); a UI só aplica a última leitura via `after()`. Sensores ausentes (sem GPU, sem LibreHardwareMonitor) são reconsultados a cada 30 s em vez de a cada leitura.
+- Abas montadas sob demanda (só "Sistema" na abertura); informações estáticas do sistema em cache; tarefas em `run_in_thread` também inicializam COM.
+
+### Alterado
+- Release: asset principal `pc-polimata-<tag>-windows-x64.zip` (pasta com `PC Polimata.exe`, abre mais rápido) e arquivo único `pc-polimata-<tag>-windows-x64.exe`; UPX desligado e módulos pesados excluídos.
+
 ## [0.5.0] - 2026-10-22
 
 ### Adicionado
@@ -86,6 +96,7 @@ Primeira versão pública.
 - Exportação JSON/HTML, testes pytest, ruff, licença MIT.
 
 [Não lançado]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.5.0...HEAD
+[0.5.1]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ThomasRhoden/pc-polimata/compare/v0.2.0...v0.3.0

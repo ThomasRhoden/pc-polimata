@@ -149,7 +149,8 @@ python -m pc_polimata
   como administrador e `pip install wmi`.
 - LLM: defina `PC_POLIMATA_API_KEY` (ou `OPENAI_API_KEY`) ou informe a chave na aba Configurações. Qualquer
   endpoint compatível com OpenAI funciona (ex.: Ollama em `http://localhost:11434/v1`).
-- **Executável Windows pronto**: baixe `pc-polimata-<versão>-windows-x64.exe` na página de
+- **Executável Windows pronto**: baixe `pc-polimata-<versão>-windows-x64.zip` (recomendado: extraia e abra
+  `PC Polimata.exe`; inicia mais rápido) ou o arquivo único `pc-polimata-<versão>-windows-x64.exe` na página de
   [releases](https://github.com/ThomasRhoden/pc-polimata/releases) (gerado e testado pelo GitHub Actions). Build manual: [docs/BUILD.md](docs/BUILD.md).
 
 Testes e lint:
@@ -162,7 +163,7 @@ pytest --cov               # cobertura (núcleo + CLI): 94 %
 xvfb-run -a pytest tests/test_gui_smoke.py   # smoke test da GUI (PT e EN) no Linux sem monitor
 ```
 
-Qualidade atual (v0.5.0): **401 testes** passando (incluindo a checagem de tradução EN que varre o código),
+Qualidade atual (v0.5.1): **412 testes** passando (incluindo a checagem de tradução EN que varre o código),
 **94 % de cobertura** no núcleo e na CLI e **mypy strict** sem erros no núcleo e nos plugins.
 
 ## Privacidade

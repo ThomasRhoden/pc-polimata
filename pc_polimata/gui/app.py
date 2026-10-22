@@ -16,9 +16,10 @@ from pc_polimata.core import fpslog, live, plugins, report, updates
 from pc_polimata.core.alerts import AlertMonitor, default_logger
 from pc_polimata.core.history import HistoryStore
 from pc_polimata.core.notify import Notifier
-from pc_polimata.core.sensors import SensorSnapshot
+from pc_polimata.core.runtime import BackgroundPoller, setup_logging
+from pc_polimata.core.sensors import SensorMonitor, SensorSnapshot
 from pc_polimata.core.settings import Settings, load_settings
-from pc_polimata.core.system_info import get_system_info
+from pc_polimata.core.system_info import get_system_info_cached
 from pc_polimata.gui import theme as t
 from pc_polimata.gui.banner import AlertBanner
 from pc_polimata.gui.overlay import Overlay
@@ -67,7 +68,8 @@ class PolimataApp(ctk.CTk):
         self.geometry("1440x760")
         self.configure(fg_color=t.BG)
         self.results: dict[str, Any] = {}
-        self.system = get_system_info()
+        self.log_path = setup_logging()
+        self.system = get_system_info_cached()
         try:
             self.history: HistoryStore | None = HistoryStore()
         except Exception:  # noqa: BLE001 - sem histórico o resto do app continua funcionando
@@ -96,10 +98,15 @@ class PolimataApp(ctk.CTk):
         )
         self.tabs.pack(fill="both", expand=True, padx=12, pady=12)
         self.tab_objects: dict[str, object] = {}
+        self._tab_classes: dict[str, tuple[str, type]] = {}
         for name, cls in TABS:
             label = tr(name)
             self.tabs.add(label)
-            self.tab_objects[name] = cls(self.tabs.tab(label), self)
+            self._tab_classes[label] = (name, cls)
+        self.tabs.configure(command=self._on_tab_change)
+        self.ensure_tab(TABS[0][0])  # só a aba visível é montada; as demais no primeiro clique
+        self.sensor_poller: BackgroundPoller[SensorSnapshot] | None = None
+        self.after(50, self._start_sensors)
         self._add_plugin_tabs()
         self.banner.attach_before(self.tabs)
         self.tray = TrayIcon(
@@ -117,6 +124,37 @@ class PolimataApp(ctk.CTk):
             self.after(200, self._poll_tray)
         if self.settings.check_updates:
             self.after(1500, self.check_updates)
+
+    # ---------- abas sob demanda ----------
+    def ensure_tab(self, name: str) -> object:
+        """Monta a aba `name` (chave não traduzida de TABS) se ainda não existir."""
+        tab = self.tab_objects.get(name)
+        if tab is None:
+            cls = dict(TABS)[name]
+            tab = self.tab_objects[name] = cls(self.tabs.tab(tr(name)), self)
+        return tab
+
+    def _on_tab_change(self) -> None:
+        entry = self._tab_classes.get(self.tabs.get())
+        if entry is not None:
+            self.ensure_tab(entry[0])
+
+    # ---------- sensores (thread de fundo + after) ----------
+    def _start_sensors(self) -> None:
+        self.sensor_poller = BackgroundPoller(
+            SensorMonitor().read,
+            interval_s=lambda: self.settings.refresh_ms / 1000,
+            enabled=lambda: self.monitoring,
+            name="pc-polimata-sensors",
+        ).start()
+        self._poll_sensors()
+
+    def _poll_sensors(self) -> None:
+        if self.sensor_poller is not None:
+            snap = self.sensor_poller.take()
+            if snap is not None:
+                self.on_snapshot(snap)
+        self.after(200, self._poll_sensors)
 
     # ---------- plugins ----------
     def _add_plugin_tabs(self) -> None:
@@ -186,6 +224,9 @@ class PolimataApp(ctk.CTk):
     def on_snapshot(self, snap: SensorSnapshot) -> None:
         """Chamado pela aba Sensores a cada leitura; dispara alertas e atualiza overlay/bandeja."""
         self.last_snapshot = snap
+        sensors_tab = self.tab_objects.get("Sensores")
+        if sensors_tab is not None:
+            sensors_tab.show(snap)  # type: ignore[attr-defined]
         if self.overlay is not None:
             self.overlay.update_snapshot(snap, self.last_fps)
         if self.tray_active:
@@ -237,13 +278,15 @@ class PolimataApp(ctk.CTk):
                 history_tab.refresh()
 
     def destroy(self) -> None:
+        if self.sensor_poller is not None:
+            self.sensor_poller.stop()
         self.tray.stop()
         if self.history is not None:
             self.history.close()
         super().destroy()
 
     def build_report(self) -> dict[str, Any]:
-        sensors = getattr(self.tab_objects.get("Sensores"), "last", None)
+        sensors = self.last_snapshot
         return report.build_report(
             self.system,
             sensors=sensors.to_dict() if sensors else None,

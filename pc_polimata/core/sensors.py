@@ -54,8 +54,13 @@ def read_cpu_temperature() -> float | None:
 class SensorMonitor:
     """Gera snapshots consecutivos calculando taxas de disco entre chamadas."""
 
+    #: sensor ausente (sem GPU, sem LibreHardwareMonitor) só é consultado de novo após este intervalo
+    RETRY_MISSING_S = 30.0
+
     def __init__(self, include_gpu: bool = True) -> None:
         self.include_gpu = include_gpu
+        self._gpu_missing_until = 0.0
+        self._temp_missing_until = 0.0
         self._last_io = psutil.disk_io_counters()
         self._last_time = time.monotonic()
         psutil.cpu_percent(percpu=True)  # primeira chamada inicializa o contador
@@ -72,10 +77,17 @@ class SensorMonitor:
 
         per_core = psutil.cpu_percent(percpu=True)
         gpu_pct = gpu_temp = None
-        if self.include_gpu:
+        if self.include_gpu and now >= self._gpu_missing_until:
             gpus = get_gpus()
             if gpus:
                 gpu_pct, gpu_temp = gpus[0].load_percent, gpus[0].temperature_c
+            else:
+                self._gpu_missing_until = now + self.RETRY_MISSING_S
+        cpu_temp = None
+        if now >= self._temp_missing_until:
+            cpu_temp = read_cpu_temperature()
+            if cpu_temp is None:
+                self._temp_missing_until = now + self.RETRY_MISSING_S
         return SensorSnapshot(
             timestamp=time.time(),
             cpu_percent=round(sum(per_core) / max(len(per_core), 1), 1),
@@ -83,7 +95,7 @@ class SensorMonitor:
             ram_percent=psutil.virtual_memory().percent,
             disk_read_mb_s=round(max(read_rate, 0.0), 2),
             disk_write_mb_s=round(max(write_rate, 0.0), 2),
-            cpu_temp_c=read_cpu_temperature(),
+            cpu_temp_c=cpu_temp,
             gpu_percent=gpu_pct,
             gpu_temp_c=gpu_temp,
         )

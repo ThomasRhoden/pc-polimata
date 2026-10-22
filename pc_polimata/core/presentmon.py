@@ -134,7 +134,13 @@ def capture(
         raise FileNotFoundError("PresentMon not found (see docs/OVERLAY.md)")
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "frames.csv"
-        runner(capture_command(exe, process, seconds, out), check=True, timeout=seconds + 30, capture_output=True)
+        runner(
+            capture_command(exe, process, seconds, out),
+            check=True,
+            timeout=seconds + 30,
+            capture_output=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
         return parse_csv(out.read_text(encoding="utf-8", errors="replace"), process)
 
 

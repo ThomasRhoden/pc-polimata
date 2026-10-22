@@ -190,6 +190,9 @@ def _initial_language(argv: list[str]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from pc_polimata.core.runtime import ensure_std_streams
+
+    ensure_std_streams()  # exe --windowed: stdout/stderr podem ser None
     argv = sys.argv[1:] if argv is None else argv
     _initial_language(argv)
     args = build_parser().parse_args(argv)

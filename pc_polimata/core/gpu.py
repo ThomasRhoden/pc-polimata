@@ -18,6 +18,8 @@ from typing import Any
 DRM_ROOT = Path("/sys/class/drm")
 AMD_VENDOR_ID = "0x1002"
 
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)  # exe sem console: não abrir janela de CMD
+
 
 @dataclass
 class GPUStatus:
@@ -170,6 +172,7 @@ def _from_rocm_smi() -> list[GPUStatus]:
         text=True,
         timeout=5,
         check=True,
+        creationflags=NO_WINDOW,
     ).stdout
     return parse_rocm_smi(out)
 

@@ -19,6 +19,8 @@ OUTDATED_AFTER_DAYS = 183  # ~6 meses
 
 Runner = Callable[[list[str]], str]
 
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)  # exe sem console: não abrir janela de CMD
+
 
 @dataclass
 class DriverInfo:
@@ -33,7 +35,7 @@ class DriverInfo:
 
 
 def _run(args: list[str]) -> str:
-    return subprocess.run(args, capture_output=True, text=True, timeout=5, check=True).stdout
+    return subprocess.run(args, capture_output=True, text=True, timeout=5, check=True, creationflags=NO_WINDOW).stdout
 
 
 def nvidia_smi_versions(runner: Runner = _run, exe: str | None = None) -> dict[str, str]:

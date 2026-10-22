@@ -39,8 +39,11 @@ def run_in_thread(widget, work: Callable[[], object], done: Callable[[object], N
     """Executa `work` fora da thread da UI e entrega o resultado via `after()`."""
 
     def runner():
+        from pc_polimata.core.runtime import com_initialized
+
         try:
-            result = work()
+            with com_initialized():  # WMI em thread secundária precisa de CoInitialize
+                result = work()
         except Exception as exc:  # noqa: BLE001 - mostrado ao usuário em vez de matar a thread
             result = exc
         widget.after(0, lambda: done(result))

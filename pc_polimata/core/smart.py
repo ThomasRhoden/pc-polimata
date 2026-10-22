@@ -17,6 +17,8 @@ from pc_polimata.i18n import N_, tr
 
 Runner = Callable[[list[str]], str]
 
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)  # exe sem console: não abrir janela de CMD
+
 
 @dataclass
 class DiskHealth:
@@ -45,7 +47,7 @@ class DiskHealth:
 
 def _default_runner(args: list[str]) -> str:
     # smartctl usa bits do exit code para avisos; a saída JSON continua válida.
-    proc = subprocess.run(args, capture_output=True, text=True, timeout=15, check=False)
+    proc = subprocess.run(args, capture_output=True, text=True, timeout=15, check=False, creationflags=NO_WINDOW)
     return proc.stdout
 
 

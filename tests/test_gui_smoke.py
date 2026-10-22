@@ -21,7 +21,19 @@ def test_app_builds_all_tabs(tmp_path, monkeypatch, language):
     app = PolimataApp(Settings(language=language, alert_cpu_temp_c=50))
     try:
         app.update()
+        assert set(app.tab_objects) == {TABS[0][0]}  # abas montadas sob demanda
+        app.tabs.set(app.tabs._name_list[1])
+        app._on_tab_change()
+        assert "Sensores" in app.tab_objects
+        for name, _ in TABS:
+            assert app.ensure_tab(name) is app.ensure_tab(name)
         assert set(app.tab_objects) == {name for name, _ in TABS}
+        if app.sensor_poller is None:
+            app._start_sensors()
+        assert app.sensor_poller is not None and app.sensor_poller.running
+        app.sensor_poller.poll_once()
+        app._poll_sensors()
+        assert app.last_snapshot is not None and app.tab_objects["Sensores"].last is app.last_snapshot
         app.on_snapshot(SensorSnapshot(0, 10, [10], 20, 0, 0, cpu_temp_c=70))
         app.update()
         assert app.banner.winfo_ismapped() and app.alert_log

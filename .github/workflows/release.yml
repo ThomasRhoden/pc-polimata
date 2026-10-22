@@ -48,24 +48,37 @@ jobs:
           $report = Get-Content smoke-report.json -Raw | ConvertFrom-Json
           if (-not $report.system.cpu) { throw "report has no CPU section" }
           Write-Host "CPU: $($report.system.cpu.name)"
-          $one = "dist-onefile/pc-polimata.exe"
-          $v2 = & $one --version
-          if ($LASTEXITCODE -ne 0 -or $v2 -notmatch [regex]::Escape($expected)) { throw "onefile --version failed: $v2" }
-          & $one --report -o smoke-onefile.json
-          if ($LASTEXITCODE -ne 0 -or -not (Test-Path smoke-onefile.json)) { throw "onefile --report failed" }
+          # GUI exes must be windowed (PE subsystem 2): no CMD window on double-click
+          python packaging/pe_subsystem.py "dist/PCPolimata/PC Polimata.exe" 2
+          if ($LASTEXITCODE -ne 0) { throw "onedir GUI exe is not windowed" }
+          python packaging/pe_subsystem.py "dist-onefile/PC Polimata.exe" 2
+          if ($LASTEXITCODE -ne 0) { throw "onefile exe is not windowed" }
+          # windowed exe has no stdout: check that the CLI still works and writes the file
+          $p = Start-Process -FilePath "dist-onefile/PC Polimata.exe" -ArgumentList "--report","-o","smoke-onefile.json" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or -not (Test-Path smoke-onefile.json)) { throw "onefile --report failed ($($p.ExitCode))" }
+          $p = Start-Process -FilePath "dist/PCPolimata/PC Polimata.exe" -ArgumentList "--report","-o","smoke-gui.json" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or -not (Test-Path smoke-gui.json)) { throw "windowed --report failed ($($p.ExitCode))" }
       - name: Package
         shell: pwsh
         run: |
-          $name = "PCPolimata-$env:TAG-windows-x64"
-          Compress-Archive -Path dist/PCPolimata -DestinationPath "$name.zip"
+          $name = "pc-polimata-$env:TAG-windows-x64"
+          Rename-Item dist/PCPolimata "PC Polimata"
+          Compress-Archive -Path "dist/PC Polimata" -DestinationPath "$name.zip"
           Copy-Item smoke-report.json "$name-smoke-report.json"
-          Copy-Item dist-onefile/pc-polimata.exe "pc-polimata-$env:TAG-windows-x64.exe"
+          Copy-Item "dist-onefile/PC Polimata.exe" "$name.exe"
       - name: Attach to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $name = "PCPolimata-$env:TAG-windows-x64"
+          $name = "pc-polimata-$env:TAG-windows-x64"
+          $notes = @"
+          Windows: baixe **$name.zip** (recomendado, abre mais rápido), extraia e rode ``PC Polimata.exe``.
+          Alternativa: **$name.exe** (arquivo único, sem instalação; mais lento para abrir).
+          ``pc-polimata.exe`` dentro do zip é a versão de linha de comando (--report, --version).
+          Executável não assinado: o SmartScreen pode avisar (Mais informações > Executar assim mesmo).
+          "@
+          Set-Content release-notes.md $notes
           gh release view $env:TAG *> $null
-          if ($LASTEXITCODE -ne 0) { gh release create $env:TAG --title "PC Polimata $env:TAG" --notes "Windows build" }
-          gh release upload $env:TAG "pc-polimata-$env:TAG-windows-x64.exe" "$name.zip" "$name-smoke-report.json" --clobber
+          if ($LASTEXITCODE -ne 0) { gh release create $env:TAG --title "PC Polimata $env:TAG" --notes-file release-notes.md }
+          gh release upload $env:TAG "$name.zip" "$name.exe" "$name-smoke-report.json" --clobber

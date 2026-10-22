@@ -86,3 +86,13 @@ def get_system_info() -> dict[str, Any]:
         "disks": get_disks_info(),
         "gpus": [g.to_dict() for g in get_gpus()],
     }
+
+
+_CACHE: dict[str, Any] = {}
+
+
+def get_system_info_cached(refresh: bool = False) -> dict[str, Any]:
+    """`get_system_info()` memorizado: hardware estático não muda durante a sessão."""
+    if refresh or "info" not in _CACHE:
+        _CACHE["info"] = get_system_info()
+    return _CACHE["info"]  # type: ignore[no-any-return]

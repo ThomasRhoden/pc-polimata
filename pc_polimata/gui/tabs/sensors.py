@@ -4,7 +4,7 @@ import sys
 
 import customtkinter as ctk
 
-from pc_polimata.core.sensors import SensorMonitor
+from pc_polimata.core.sensors import SensorSnapshot
 from pc_polimata.core.timeseries import RollingSeries
 from pc_polimata.core.units import format_temp
 from pc_polimata.core.windows_temps import HINT
@@ -14,12 +14,11 @@ from pc_polimata.i18n import tr
 
 
 class SensorsTab:
-    """Barras instantâneas + gráfico dos últimos 60 s, atualizados por `after()`."""
+    """Barras + gráfico dos últimos 60 s. As leituras vêm da thread de sensores do app (`show`)."""
 
     def __init__(self, master: ctk.CTkFrame, app) -> None:
         self.app = app
         self.last = None
-        self.monitor = SensorMonitor()
         self.history = RollingSeries(["cpu", "ram", "gpu"], maxlen=60)
         self.bars: dict[str, tuple[ctk.CTkProgressBar, ctk.CTkLabel]] = {}
         for key in ("cpu", "ram", "gpu"):
@@ -37,13 +36,11 @@ class SensorsTab:
         ctk.CTkLabel(master, text=tr("Histórico dos últimos 60 s"), text_color=t.MUTED).pack(anchor="w", padx=12)
         self.chart = LineChart(master, self.history)
         self.chart.pack(fill="both", expand=True, padx=12, pady=(2, 10))
-        master.after(300, self.refresh)
+        if app.last_snapshot is not None:
+            self.show(app.last_snapshot)
 
-    def refresh(self) -> None:
-        if not self.app.monitoring:  # pausado pela bandeja: mantém o laço, não lê sensores
-            self.extra.after(self.app.settings.refresh_ms, self.refresh)
-            return
-        snap = self.last = self.monitor.read()
+    def show(self, snap: SensorSnapshot) -> None:
+        self.last = snap
         self.history.append(cpu=snap.cpu_percent, ram=snap.ram_percent, gpu=snap.gpu_percent)
         for key, pct in (("cpu", snap.cpu_percent), ("ram", snap.ram_percent), ("gpu", snap.gpu_percent)):
             bar, val = self.bars[key]
@@ -70,5 +67,3 @@ class SensorsTab:
             )
         )
         self.chart.redraw()
-        self.app.on_snapshot(snap)
-        self.extra.after(self.app.settings.refresh_ms, self.refresh)
