@@ -27,6 +27,8 @@ SECTION_TITLES = {
     "diagnosis": N_("Diagnóstico"),
     "drivers": N_("Drivers"),
     "alerts": N_("Alertas"),
+    "plugins": N_("Plugins"),
+    "fps_capture": N_("FPS (PresentMon)"),
 }
 
 PDF_HELP = N_(
