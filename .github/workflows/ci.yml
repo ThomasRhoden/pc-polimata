@@ -5,8 +5,16 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: ${{ matrix.os }} / py${{ matrix.python-version }}
     strategy:
       fail-fast: false
       matrix:
@@ -18,6 +26,30 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install psutil py-cpuinfo pytest ruff
-      - run: ruff check .
-      - run: pytest -v
+          cache: pip
+      - name: System packages (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,pdf,memory,tray]"
+      - name: Ruff
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Mypy (strict on core)
+        run: mypy
+      - name: Pytest + coverage (GUI smoke test under xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a pytest --cov --cov-report=term --cov-report=xml
+      - name: Pytest + coverage
+        if: runner.os == 'Windows'
+        env:
+          PC_POLIMATA_NO_TRAY: "1"
+        run: pytest --cov --cov-report=term --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        with:
+          name: coverage-xml
+          path: coverage.xml

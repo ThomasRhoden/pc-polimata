@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build (e.g. v0.5.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows-exe:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[pdf,memory,tray,windows]" pyinstaller
+      - name: Build (PyInstaller, folder + single file)
+        shell: pwsh
+        run: |
+          pyinstaller packaging/pc_polimata.spec --clean --noconfirm
+          $env:PC_POLIMATA_ONEFILE = "1"
+          pyinstaller packaging/pc_polimata.spec --noconfirm --distpath dist-onefile --workpath build-onefile
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $exe = "dist/PCPolimata/pc-polimata.exe"
+          $version = & $exe --version
+          Write-Host $version
+          if ($LASTEXITCODE -ne 0) { throw "--version failed" }
+          $expected = "$env:TAG".TrimStart("v")
+          if ($version -notmatch [regex]::Escape($expected)) { throw "version mismatch: $version (expected $expected)" }
+          & $exe --report --plugins -o smoke-report.json
+          if ($LASTEXITCODE -ne 0) { throw "--report failed" }
+          $report = Get-Content smoke-report.json -Raw | ConvertFrom-Json
+          if (-not $report.system.cpu) { throw "report has no CPU section" }
+          Write-Host "CPU: $($report.system.cpu.name)"
+          $one = "dist-onefile/pc-polimata.exe"
+          $v2 = & $one --version
+          if ($LASTEXITCODE -ne 0 -or $v2 -notmatch [regex]::Escape($expected)) { throw "onefile --version failed: $v2" }
+          & $one --report -o smoke-onefile.json
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path smoke-onefile.json)) { throw "onefile --report failed" }
+      - name: Package
+        shell: pwsh
+        run: |
+          $name = "PCPolimata-$env:TAG-windows-x64"
+          Compress-Archive -Path dist/PCPolimata -DestinationPath "$name.zip"
+          Copy-Item smoke-report.json "$name-smoke-report.json"
+          Copy-Item dist-onefile/pc-polimata.exe "pc-polimata-$env:TAG-windows-x64.exe"
+      - name: Attach to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $name = "PCPolimata-$env:TAG-windows-x64"
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -ne 0) { gh release create $env:TAG --title "PC Polimata $env:TAG" --notes "Windows build" }
+          gh release upload $env:TAG "pc-polimata-$env:TAG-windows-x64.exe" "$name.zip" "$name-smoke-report.json" --clobber
