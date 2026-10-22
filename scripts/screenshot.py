@@ -1,6 +1,7 @@
 """Gera screenshots da GUI em docs/ (Linux: `xvfb-run -s "-screen 0 1180x720x24" python scripts/screenshot.py`).
 
-Uso: python scripts/screenshot.py [Aba=segundos ...]   ex.: Sistema=2 Sensores=20
+Uso: python scripts/screenshot.py [--lang en] [--prefix nome] [--gif] [Aba=segundos ...]
+ex.: python scripts/screenshot.py Sistema=2 Sensores=20
 """
 
 import os
@@ -14,6 +15,8 @@ os.environ.setdefault("XDG_CONFIG_HOME", tempfile.mkdtemp())  # não usa as conf
 
 from PIL import ImageGrab  # noqa: E402
 
+from pc_polimata.core.sensors import SensorSnapshot  # noqa: E402
+from pc_polimata.core.settings import Settings  # noqa: E402
 from pc_polimata.gui.app import PolimataApp  # noqa: E402
 from pc_polimata.i18n import tr  # noqa: E402
 
@@ -42,6 +45,13 @@ DEMO_ACTIONS = {
     "Jogos": _demo_games,
     "Diagnóstico IA": lambda tab: tab.run(),
 }
+
+
+def _demo_alert(app: PolimataApp) -> None:
+    # Leitura SIMULADA (a VM não tem sensor de temperatura) só para mostrar a faixa de alerta.
+    app.on_snapshot(SensorSnapshot(0, 97, [97], 60, 0, 0, cpu_temp_c=91.0))
+
+
 W, H = 1180, 720
 
 
@@ -50,23 +60,35 @@ def slug(name: str) -> str:
     return ascii_name.lower().replace(" ", "_")
 
 
-def main(specs: list[str]) -> None:
-    app = PolimataApp()
+def main(argv: list[str]) -> None:
+    lang = argv[argv.index("--lang") + 1] if "--lang" in argv else "pt"
+    prefix = argv[argv.index("--prefix") + 1] if "--prefix" in argv else "screenshot"
+    make_gif = "--gif" in argv
+    specs = [a for a in argv if "=" in a] or DEFAULT
+    app = PolimataApp(Settings(language=lang))
     app.geometry(f"{W}x{H}+0+0")
     queue = [(name, float(secs)) for name, secs in (s.split("=") for s in specs)]
+    frames: list[Path] = []
 
     def step() -> None:
         if not queue:
             app.destroy()
             return
         name, secs = queue.pop(0)
+        if name == "Alerta":
+            _demo_alert(app)
+            name = "Sensores"
+            target = "alerta"
+        else:
+            target = slug(name)
         app.tabs.set(tr(name))
-        if name in DEMO_ACTIONS:
+        if name in DEMO_ACTIONS and target != "alerta":
             DEMO_ACTIONS[name](app.tab_objects[name])
 
         def snap() -> None:
-            out = Path("docs") / f"screenshot_{slug(name)}.png"
+            out = Path("docs") / f"{prefix}_{target}.png"
             ImageGrab.grab(bbox=(0, 0, W, H)).save(out)
+            frames.append(out)
             print(out)
             step()
 
@@ -74,7 +96,15 @@ def main(specs: list[str]) -> None:
 
     app.after(500, step)
     app.mainloop()
+    if make_gif and frames:
+        from PIL import Image
+
+        images = [Image.open(f).convert("RGB").resize((W * 2 // 3, H * 2 // 3)) for f in frames]
+        palette = [im.quantize(colors=128) for im in images]
+        gif = Path("docs") / "demo.gif"
+        palette[0].save(gif, save_all=True, append_images=palette[1:], duration=1800, loop=0, optimize=True)
+        print(gif)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:] or DEFAULT)
+    main(sys.argv[1:])
