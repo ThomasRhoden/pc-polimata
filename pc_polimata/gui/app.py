@@ -12,9 +12,10 @@ from typing import Any
 import customtkinter as ctk
 import psutil
 
-from pc_polimata.core import live, plugins, report, updates
+from pc_polimata.core import fpslog, live, plugins, report, updates
 from pc_polimata.core.alerts import AlertMonitor, default_logger
 from pc_polimata.core.history import HistoryStore
+from pc_polimata.core.notify import Notifier
 from pc_polimata.core.sensors import SensorSnapshot
 from pc_polimata.core.settings import Settings, load_settings
 from pc_polimata.core.system_info import get_system_info
@@ -74,6 +75,8 @@ class PolimataApp(ctk.CTk):
 
         self.alerts = AlertMonitor(self.settings.alert_thresholds(), default_logger())
         self.alert_log: list[str] = []
+        self.notifier = Notifier.auto(self.settings.desktop_notifications)
+        self.fps_tail: fpslog.FrameLogTail | fpslog.FolderTail | None = None
         self._last_disk_check = 0.0
         self.monitoring = True
         self.overlay: Overlay | None = None
@@ -154,6 +157,31 @@ class PolimataApp(ctk.CTk):
         if self.last_snapshot is not None:
             self.overlay.update_snapshot(self.last_snapshot, self.last_fps)
 
+    # ---------- FPS ao vivo ----------
+    def start_fps_tail(self, tail: fpslog.FrameLogTail | fpslog.FolderTail) -> None:
+        first = self.fps_tail is None
+        self.fps_tail = tail
+        if first:
+            self.after(1000, self._poll_fps)
+
+    def stop_fps_tail(self) -> None:
+        self.fps_tail = None
+        self.last_fps = None
+
+    def _poll_fps(self) -> None:
+        if self.fps_tail is None:
+            return
+        stats = self.fps_tail.poll()
+        if stats is not None:
+            self.last_fps = fpslog.overlay_text(stats)
+            self.results["fps_live"] = {**stats.to_dict(), "format": self.fps_tail.kind}
+            if self.overlay is not None and self.last_snapshot is not None:
+                self.overlay.update_snapshot(self.last_snapshot, self.last_fps)
+        listener = getattr(self.tab_objects.get("Overlay & FPS"), "on_live_stats", None)
+        if listener:
+            listener(stats)
+        self.after(1000, self._poll_fps)
+
     # ---------- alertas ----------
     def on_snapshot(self, snap: SensorSnapshot) -> None:
         """Chamado pela aba Sensores a cada leitura; dispara alertas e atualiza overlay/bandeja."""
@@ -173,6 +201,7 @@ class PolimataApp(ctk.CTk):
         for alert in self.alerts.evaluate(snap.cpu_temp_c, snap.gpu_temp_c, snap.ram_percent, disks):
             self.alert_log.append(alert.message)
             self.banner.show(alert.message)
+            self.notifier.notify(alert.key, tr("PC Polimata — alerta"), alert.message)
 
     def apply_thresholds(self) -> None:
         self.alerts.thresholds = self.settings.alert_thresholds()

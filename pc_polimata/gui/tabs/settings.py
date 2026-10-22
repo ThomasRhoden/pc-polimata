@@ -20,7 +20,7 @@ NUMERIC = {
     "alert_disk_percent": float,
     "overlay_opacity": float,
 }
-BOOLEAN = ("check_updates", "tray_icon")
+BOOLEAN = ("check_updates", "tray_icon", "desktop_notifications")
 
 
 class SettingsTab:
@@ -61,6 +61,13 @@ class SettingsTab:
         if s.check_updates:
             updates_box.select()
         row(tr("Verificar novas versões ao iniciar (GitHub)"), updates_box, "check_updates")
+        notify_box = ctk.CTkCheckBox(form, text="", fg_color=t.GREEN, hover_color=t.GREEN_HOVER)
+        if s.desktop_notifications:
+            notify_box.select()
+        backend = app.notifier.backend_name or tr("nenhum backend encontrado")
+        row(
+            tr("Notificações do sistema para alertas ({backend})", backend=backend), notify_box, "desktop_notifications"
+        )
         tray_box = ctk.CTkCheckBox(form, text="", fg_color=t.GREEN, hover_color=t.GREEN_HOVER)
         if s.tray_icon:
             tray_box.select()
@@ -135,6 +142,7 @@ class SettingsTab:
         self.app.plugins.disabled = set(new.disabled_plugins)
         self.app.settings = new
         self.app.apply_thresholds()
+        self.app.notifier.enabled = new.desktop_notifications and self.app.notifier.available
         msg = tr("Salvo em {path}", path=path)
         if restart:
             msg += "\n" + tr("Reinicie o app para aplicar idioma, tema, bandeja e abas de plugins.")

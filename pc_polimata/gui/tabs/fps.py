@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import subprocess
 import sys
+import tempfile
+from pathlib import Path
+from tkinter import filedialog
 
 import customtkinter as ctk
 
-from pc_polimata.core import presentmon
+from pc_polimata.core import fpslog, presentmon
 from pc_polimata.gui import theme as t
 from pc_polimata.gui.widgets import button, run_in_thread, set_text, textbox
 from pc_polimata.i18n import tr
@@ -25,10 +29,22 @@ class FpsTab:
         self.seconds.pack(side="left", padx=4)
         self.capture_btn = button(bar, tr("Medir FPS (PresentMon)"), self.capture, primary=False)
         self.capture_btn.pack(side="left", padx=4)
-        self.box = textbox(master, 420)
+        live = ctk.CTkFrame(master, fg_color="transparent")
+        live.pack(fill="x", padx=12, pady=(0, 8))
+        ctk.CTkLabel(live, text=tr("FPS ao vivo no overlay:")).pack(side="left", padx=(0, 8))
+        button(live, tr("Arquivo CSV…"), self.live_file, primary=False).pack(side="left", padx=4)
+        button(live, tr("Pasta do MangoHud…"), self.live_folder, primary=False).pack(side="left", padx=4)
+        if sys.platform.startswith("win"):
+            button(live, tr("PresentMon ao vivo"), self.live_presentmon, primary=False).pack(side="left", padx=4)
+        button(live, tr("Parar"), self.stop_live, primary=False).pack(side="left", padx=4)
+        self.live_label = ctk.CTkLabel(live, text="", text_color=t.GREEN_LIGHT, font=ctk.CTkFont(*t.MONO))
+        self.live_label.pack(side="left", padx=12)
+        self.proc: subprocess.Popen[bytes] | None = None
+        self._tmp: tempfile.TemporaryDirectory[str] | None = None
+        self.box = textbox(master, 400)
         exe = presentmon.find_presentmon()
         if not sys.platform.startswith("win"):
-            intro = tr("A medição de FPS usa o PresentMon e só funciona no Windows.")
+            intro = tr("No Linux, use o MangoHud com log ativado e escolha a pasta dos logs (ver docs/OVERLAY.md).")
         elif exe is None:
             intro = tr("PresentMon não encontrado. Instale-o e coloque no PATH (ou defina PRESENTMON_PATH).")
         else:
@@ -83,3 +99,51 @@ class FpsTab:
                 return exc
 
         run_in_thread(self.box, work, done)
+
+    # ---------- ao vivo ----------
+    def _start(self, tail: fpslog.FrameLogTail | fpslog.FolderTail, what: str) -> None:
+        self.app.start_fps_tail(tail)
+        if self.app.overlay is None:
+            self.app.toggle_overlay()
+        self.live_label.configure(text=tr("acompanhando {what}…", what=what))
+
+    def live_file(self, path: str | None = None) -> None:
+        path = path or filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
+        if path:
+            self._start(fpslog.FrameLogTail(path, process=self.process.get().strip() or None), Path(path).name)
+
+    def live_folder(self, folder: str | None = None) -> None:
+        folder = folder or filedialog.askdirectory(initialdir=str(Path.home() / "mangohud_logs"))
+        if folder:
+            self._start(fpslog.FolderTail(folder), folder)
+
+    def live_presentmon(self) -> None:
+        process = self.process.get().strip()
+        exe = presentmon.find_presentmon()
+        if not process or exe is None:
+            set_text(self.box, tr("Informe o processo e instale o PresentMon (ver docs/OVERLAY.md)."))
+            return
+        self.stop_live()
+        self._tmp = tempfile.TemporaryDirectory()
+        out = Path(self._tmp.name) / "live.csv"
+        try:
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            self.proc = subprocess.Popen(presentmon.live_command(exe, process, out), creationflags=flags)
+        except OSError as exc:
+            set_text(self.box, tr("Falha na medição: {error}", error=exc))
+            return
+        self._start(fpslog.FrameLogTail(out, process=process), process)
+
+    def stop_live(self) -> None:
+        self.app.stop_fps_tail()
+        if self.proc is not None:
+            self.proc.terminate()
+            self.proc = None
+        if self._tmp is not None:
+            self._tmp.cleanup()
+            self._tmp = None
+        self.live_label.configure(text="")
+
+    def on_live_stats(self, stats: presentmon.FrameStats | None) -> None:
+        text = fpslog.overlay_text(stats)
+        self.live_label.configure(text=text or tr("aguardando frames…"))

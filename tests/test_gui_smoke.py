@@ -34,6 +34,17 @@ def test_app_builds_all_tabs(tmp_path, monkeypatch, language):
         assert app.overlay is not None and "CPU" in app.overlay.label.cget("text")
         app.toggle_overlay()
         assert app.overlay is None
+        mango = tmp_path / "live.csv"
+        mango.write_text("fps,frametime\n100,10\n")
+        fps_tab = app.tab_objects["Overlay & FPS"]
+        fps_tab.live_file(str(mango))
+        app._poll_fps()
+        app.update()
+        assert app.last_fps and "FPS 100" in app.overlay.label.cget("text")
+        assert app.build_report()["fps_live"]["format"] == "mangohud"
+        fps_tab.stop_live()
+        assert app.fps_tail is None and app.last_fps is None
+        app.toggle_overlay()
         app.toggle_monitoring()
         assert app.monitoring is False
         compare = app.tab_objects["Comparar"]
