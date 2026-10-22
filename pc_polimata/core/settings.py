@@ -13,8 +13,12 @@ import os
 import sys
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pc_polimata.core.units import TEMP_UNITS
+
+if TYPE_CHECKING:
+    from pc_polimata.core.alerts import AlertThresholds
 
 ACCENTS = ("floresta", "terra")
 LANGUAGES = ("pt", "en")
@@ -36,6 +40,11 @@ class Settings:
     refresh_ms: int = 1000
     llm_base_url: str = "https://api.openai.com/v1"
     llm_model: str = "gpt-4o-mini"
+    check_updates: bool = False  # opt-in: consulta a API de releases do GitHub
+    alert_cpu_temp_c: float = 85.0
+    alert_gpu_temp_c: float = 85.0
+    alert_ram_percent: float = 90.0
+    alert_disk_percent: float = 95.0
 
     def validate(self) -> Settings:
         if self.language not in LANGUAGES:
@@ -47,7 +56,19 @@ class Settings:
         if not 250 <= int(self.refresh_ms) <= 10_000:
             raise ValueError("refresh_ms must be between 250 and 10000")
         self.refresh_ms = int(self.refresh_ms)
+        self.check_updates = bool(self.check_updates)
+        self.alert_thresholds()  # valida os limites
         return self
+
+    def alert_thresholds(self) -> AlertThresholds:
+        from pc_polimata.core.alerts import AlertThresholds  # import tardio: alerts importa settings
+
+        return AlertThresholds(
+            float(self.alert_cpu_temp_c),
+            float(self.alert_gpu_temp_c),
+            float(self.alert_ram_percent),
+            float(self.alert_disk_percent),
+        ).validate()
 
 
 def settings_path(directory: Path | None = None) -> Path:
