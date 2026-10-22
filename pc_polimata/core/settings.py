@@ -46,6 +46,7 @@ class Settings:
     alert_gpu_temp_c: float = 85.0
     alert_ram_percent: float = 90.0
     alert_disk_percent: float = 95.0
+    desktop_notifications: bool = True  # notificação nativa do SO para alertas, se houver backend
     tray_icon: bool = True  # só tem efeito com pystray + Pillow instalados
     overlay_corner: str = "top-right"
     overlay_opacity: float = 0.8
@@ -64,6 +65,7 @@ class Settings:
         self.refresh_ms = int(self.refresh_ms)
         self.check_updates = bool(self.check_updates)
         self.tray_icon = bool(self.tray_icon)
+        self.desktop_notifications = bool(self.desktop_notifications)
         self.overlay_opacity = float(self.overlay_opacity)
         self.overlay_config()  # valida o overlay
         if not isinstance(self.disabled_plugins, list) or not all(isinstance(n, str) for n in self.disabled_plugins):
