@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from pc_polimata.cli import main
 from pc_polimata.core import report
 from pc_polimata.core.sensors import SensorMonitor
@@ -49,3 +51,34 @@ def test_cli_full_headless(tmp_path, monkeypatch):
         "disk",
         "memory",
     }
+
+
+def test_html_template_tables_and_summary():
+    data = report.build_report(
+        {"cpu": {"name": "Ryzen"}, "memory": {"total_gb": 16}, "gpus": []},
+        disk_health=[{"device": "/dev/sda", "status": "OK"}],
+        diagnosis={"score": 90},
+    )
+    text = report.to_html(data)
+    assert "<table class='grid'>" in text and "Saúde dos discos (SMART)" in text and "90/100" in text
+
+
+def test_pdf_export(tmp_path):
+    pytest.importorskip("reportlab")
+    out = report.save_report(report.build_report({"cpu": {"name": "X"}}, extra=[{"a": 1}]), tmp_path / "r.pdf")
+    assert out.read_bytes().startswith(b"%PDF")
+
+
+def test_pdf_without_reportlab(tmp_path, monkeypatch):
+    import builtins
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name.startswith("reportlab"):
+            raise ImportError(name)
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(report.PdfUnavailableError, match="HTML"):
+        report.save_report(report.build_report({}), tmp_path / "r.pdf")

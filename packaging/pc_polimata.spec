@@ -10,7 +10,7 @@ from PyInstaller.utils.hooks import collect_data_files
 ROOT = Path(SPECPATH).parent
 
 datas = collect_data_files("customtkinter")  # temas JSON e fontes do customtkinter
-datas += [(str(ROOT / "pc_polimata" / "data" / "hardware_tiers.json"), "pc_polimata/data")]
+datas += [(str(p), "pc_polimata/data") for p in (ROOT / "pc_polimata" / "data").glob("*.[jc]s*")]
 
 a = Analysis(
     [str(ROOT / "packaging" / "launcher.py")],

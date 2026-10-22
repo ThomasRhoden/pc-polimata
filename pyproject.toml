@@ -15,6 +15,7 @@ dependencies = ["psutil>=5.9", "py-cpuinfo>=9.0", "customtkinter>=5.2"]
 [project.optional-dependencies]
 gpu = ["nvidia-ml-py>=12.0"]
 memory = ["numpy>=1.24"]
+pdf = ["reportlab>=4.0"]
 windows = ["wmi>=1.5; sys_platform == 'win32'"]
 dev = ["pytest>=8", "ruff>=0.5"]
 
@@ -30,7 +31,7 @@ Changelog = "https://github.com/ThomasRhoden/pc-polimata/blob/main/CHANGELOG.md"
 include = ["pc_polimata*"]
 
 [tool.setuptools.package-data]
-"pc_polimata.data" = ["*.json"]
+"pc_polimata.data" = ["*.json", "*.css"]
 
 [tool.ruff]
 line-length = 120

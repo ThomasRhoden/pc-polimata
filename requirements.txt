@@ -7,3 +7,5 @@ GPUtil>=1.4; python_version < "3.12"
 wmi>=1.5; sys_platform == "win32"
 # Opcional (benchmark de memória mais preciso):
 numpy>=1.24
+# Opcional (exportar relatório em PDF):
+reportlab>=4.0
