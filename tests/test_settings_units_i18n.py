@@ -52,3 +52,37 @@ def test_tr_switches_language():
         i18n.set_language("pt")
     with pytest.raises(ValueError):
         i18n.set_language("xx")
+
+
+def test_cli_tools(tmp_path, monkeypatch, capsys):
+    import json as _json
+
+    from pc_polimata import cli
+    from pc_polimata.core import exchange
+
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    assert cli.main(["--list-plugins"]) == 0 and "uptime" in capsys.readouterr().out
+    assert cli.main(["--export-runs", str(tmp_path / "x.json")]) == 1  # histórico vazio
+    from pc_polimata.core.history import HistoryStore
+
+    store = HistoryStore()
+    store.save_run("cpu", {"single_core_score": 100.0, "multi_core_score": 400.0})
+    store.close()
+    capsys.readouterr()
+    out = tmp_path / "a.json"
+    assert cli.main(["--export-runs", str(out)]) == 0
+    assert exchange.import_bundle(out).runs
+    capsys.readouterr()
+    assert cli.main(["--compare", str(out), str(out)]) == 0
+    rows = _json.loads(capsys.readouterr().out)["rows"]
+    assert rows[0]["winner"] == "tie"
+    assert cli.main(["--compare", str(out), str(tmp_path / "missing.json")]) == 2
+    csv = tmp_path / "f.csv"
+    csv.write_text("Application,MsBetweenPresents\ng.exe,10\ng.exe,20\n")
+    capsys.readouterr()
+    assert cli.main(["--fps-csv", str(csv), "--process", "g.exe"]) == 0
+    assert _json.loads(capsys.readouterr().out)["frames"] == 2
+    assert cli.main(["--fps-csv", str(tmp_path / "nope.csv")]) == 2
+    capsys.readouterr()
+    assert cli.main(["--plugins"]) == 0
+    assert "uptime" in _json.loads(capsys.readouterr().out)["plugins"]
