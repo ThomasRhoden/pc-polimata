@@ -43,11 +43,13 @@ jobs:
       - name: Pytest + coverage (GUI smoke test under xvfb)
         if: runner.os == 'Linux'
         run: xvfb-run -a pytest --cov --cov-report=term --cov-report=xml
+      # O smoke test da GUI roda no Linux (xvfb); no Windows o Tk do runner falha ao criar
+      # várias janelas Tk seguidas no mesmo processo, então a GUI fica de fora aqui.
       - name: Pytest + coverage
         if: runner.os == 'Windows'
         env:
           PC_POLIMATA_NO_TRAY: "1"
-        run: pytest --cov --cov-report=term --cov-report=xml
+        run: pytest --cov --cov-report=term --cov-report=xml --ignore=tests/test_gui_smoke.py
       - uses: actions/upload-artifact@v4
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         with:

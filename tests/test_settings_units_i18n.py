@@ -38,8 +38,14 @@ def test_settings_ignores_unknown_and_rejects_invalid(tmp_path):
 
 def test_config_dir_respects_xdg(monkeypatch, tmp_path):
     monkeypatch.setattr(st.sys, "platform", "linux")
+    monkeypatch.delenv("PC_POLIMATA_CONFIG_DIR")
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     assert st.config_dir() == tmp_path / "pc-polimata"
+
+
+def test_config_dir_override(monkeypatch, tmp_path):
+    monkeypatch.setenv("PC_POLIMATA_CONFIG_DIR", str(tmp_path / "portable"))
+    assert st.config_dir() == tmp_path / "portable"
 
 
 def test_tr_switches_language():

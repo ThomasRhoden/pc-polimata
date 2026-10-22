@@ -2,6 +2,7 @@
 
 - Windows: %APPDATA%\\PCPolimata\\settings.json
 - Linux/macOS: $XDG_CONFIG_HOME/pc-polimata/settings.json (ou ~/.config)
+- Em qualquer SO, $PC_POLIMATA_CONFIG_DIR substitui o diretório (testes, uso portátil).
 A chave de API nunca é gravada aqui: ela vem de variável de ambiente ou de
 um arquivo separado com permissão restrita (ver `secrets`).
 """
@@ -26,6 +27,9 @@ LANGUAGES = ("pt", "en")
 
 
 def config_dir() -> Path:
+    override = os.environ.get("PC_POLIMATA_CONFIG_DIR")  # testes, instalações portáteis
+    if override:
+        return Path(override)
     if sys.platform.startswith("win"):
         base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
         return base / "PCPolimata"

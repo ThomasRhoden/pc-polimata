@@ -36,7 +36,7 @@ def test_cli_report_json(tmp_path):
 
 
 def test_cli_full_headless(tmp_path, monkeypatch):
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setenv("PC_POLIMATA_CONFIG_DIR", str(tmp_path / "pc-polimata"))
     for var in ("PC_POLIMATA_API_KEY", "OPENAI_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     out = tmp_path / "r.json"
