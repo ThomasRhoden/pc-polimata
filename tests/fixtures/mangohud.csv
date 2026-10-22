@@ -1,0 +1,8 @@
+os,cpu,gpu,ram,kernel,driver,cpuscheduler
+Arch Linux,AMD Ryzen 7 5800X 8-Core Processor,AMD Radeon RX 6800 XT,32768,6.10.2-arch1-1,Mesa 24.2.6,
+--------------------FRAME METRICS--------------------
+fps,frametime,cpu_load,gpu_load,cpu_temp,gpu_temp,gpu_core_clock,gpu_mem_clock,gpu_vram_used,gpu_power,ram_used,swap_used,process_rss,elapsed
+100.0,10.0,35,97,61,70,2400,2000,6.1,250,9.2,0,2.1,10000000
+100.0,10.0,35,97,61,70,2400,2000,6.1,250,9.2,0,2.1,20000000
+50.0,20.0,35,97,61,70,2400,2000,6.1,250,9.2,0,2.1,40000000
+bad,row

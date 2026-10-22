@@ -136,3 +136,9 @@ def capture(
         out = Path(tmp) / "frames.csv"
         runner(capture_command(exe, process, seconds, out), check=True, timeout=seconds + 30, capture_output=True)
         return parse_csv(out.read_text(encoding="utf-8", errors="replace"), process)
+
+
+def live_command(exe: str, process: str, output: Path) -> list[str]:
+    """Captura contínua (sem --timed) para acompanhar ao vivo com `fpslog.FrameLogTail`."""
+    cmd = capture_command(exe, process, 0, output)
+    return cmd[:5] + ["--stop_existing_session"]
